@@ -1,0 +1,443 @@
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 12.9.1
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+WARNING: The NVIDIA Driver was not detected.  GPU functionality will not be available.
+   Use the NVIDIA Container Toolkit to start this container with GPU support; see
+   https://docs.nvidia.com/datacenter/cloud-native/ .
+
+2026-05-29T09:51:19.761662Z INFO: cluster coordinator listening on 0.0.0.0:50051
+2026-05-29T09:51:19.761688Z INFO: metrics server listening on http://0.0.0.0:9090/metrics
+2026-05-29T09:51:19.761694Z INFO: zisk-coordinator listening on 0.0.0.0:7000
+2026-05-29T09:51:32.644036Z INFO: Registered worker: WorkerId(node1) (total: 1 CC: 10CU ACC: 0CU)
+2026-05-29T09:51:32.644192Z INFO: WorkerId(node1) registered successfully
+2026-05-29T09:51:38.045227Z INFO: Registered worker: WorkerId(node4) (total: 2 CC: 20CU ACC: 0CU)
+2026-05-29T09:51:38.045249Z INFO: WorkerId(node4) registered successfully
+2026-05-29T09:51:38.092523Z INFO: Registered worker: WorkerId(node2) (total: 3 CC: 30CU ACC: 0CU)
+2026-05-29T09:51:38.092553Z INFO: WorkerId(node2) registered successfully
+2026-05-29T09:51:39.493476Z INFO: Registered worker: WorkerId(node3) (total: 4 CC: 40CU ACC: 0CU)
+2026-05-29T09:51:39.493503Z INFO: WorkerId(node3) registered successfully
+2026-05-29T09:52:18.773936Z DEBUG: new
+2026-05-29T09:52:18.789475Z DEBUG: gRPC call OK
+2026-05-29T09:52:18.789483Z DEBUG: close
+2026-05-29T09:52:18.789832Z DEBUG: new
+2026-05-29T09:52:18.793387Z DEBUG: gRPC call OK
+2026-05-29T09:52:18.793394Z DEBUG: close
+2026-05-29T09:52:18.793867Z DEBUG: new
+2026-05-29T09:52:23.794389Z DEBUG: gRPC call OK
+2026-05-29T09:52:23.794413Z DEBUG: close
+2026-05-29T09:52:23.795242Z DEBUG: new
+2026-05-29T09:52:28.796368Z DEBUG: slow gRPC call
+2026-05-29T09:52:28.796381Z DEBUG: close
+2026-05-29T09:52:28.797028Z DEBUG: new
+2026-05-29T09:52:33.798030Z DEBUG: gRPC call OK
+2026-05-29T09:52:33.798056Z DEBUG: close
+2026-05-29T09:52:33.798849Z DEBUG: new
+2026-05-29T09:52:38.799686Z DEBUG: gRPC call OK
+2026-05-29T09:52:38.799707Z DEBUG: close
+2026-05-29T09:52:38.800266Z DEBUG: new
+2026-05-29T09:52:43.801554Z DEBUG: slow gRPC call
+2026-05-29T09:52:43.801578Z DEBUG: close
+2026-05-29T09:52:43.802241Z DEBUG: new
+2026-05-29T09:52:48.803691Z DEBUG: slow gRPC call
+2026-05-29T09:52:48.803717Z DEBUG: close
+2026-05-29T09:52:48.804290Z DEBUG: new
+2026-05-29T09:52:53.805608Z DEBUG: slow gRPC call
+2026-05-29T09:52:53.805636Z DEBUG: close
+2026-05-29T09:52:53.806282Z DEBUG: new
+2026-05-29T09:52:58.807449Z DEBUG: slow gRPC call
+2026-05-29T09:52:58.807475Z DEBUG: close
+2026-05-29T09:52:58.808033Z DEBUG: new
+2026-05-29T09:53:03.809086Z DEBUG: slow gRPC call
+2026-05-29T09:53:03.809109Z DEBUG: close
+2026-05-29T09:53:03.809881Z DEBUG: new
+2026-05-29T09:53:08.674462Z INFO: [Setup] Worker WorkerId(node4) completed setup for job_id dce8e7d2-44f2-408e-ad98-d0d8e8fed048 hash_id 79c9ec234a8c28bf6e93dc7c2fd7124fe96c5464de97873885932fe355c53753
+2026-05-29T09:53:08.674494Z INFO: Worker WorkerId(node4) Ready (total: 4 CC: 40CU ACC: 10CU)
+2026-05-29T09:53:08.674499Z INFO: [Setup] Worker WorkerId(node4) finished setup, now Ready
+2026-05-29T09:53:08.689350Z INFO: [Setup] Worker WorkerId(node3) completed setup for job_id dce8e7d2-44f2-408e-ad98-d0d8e8fed048 hash_id 79c9ec234a8c28bf6e93dc7c2fd7124fe96c5464de97873885932fe355c53753
+2026-05-29T09:53:08.689357Z INFO: Worker WorkerId(node3) Ready (total: 4 CC: 40CU ACC: 20CU)
+2026-05-29T09:53:08.689359Z INFO: [Setup] Worker WorkerId(node3) finished setup, now Ready
+2026-05-29T09:53:08.810570Z DEBUG: gRPC call OK
+2026-05-29T09:53:08.810586Z DEBUG: close
+2026-05-29T09:53:08.811436Z DEBUG: new
+2026-05-29T09:53:09.049739Z INFO: [Setup] Worker WorkerId(node2) completed setup for job_id dce8e7d2-44f2-408e-ad98-d0d8e8fed048 hash_id 79c9ec234a8c28bf6e93dc7c2fd7124fe96c5464de97873885932fe355c53753
+2026-05-29T09:53:09.049754Z INFO: Worker WorkerId(node2) Ready (total: 4 CC: 40CU ACC: 30CU)
+2026-05-29T09:53:09.049759Z INFO: [Setup] Worker WorkerId(node2) finished setup, now Ready
+2026-05-29T09:53:09.159556Z INFO: [Setup] Worker WorkerId(node1) completed setup for job_id dce8e7d2-44f2-408e-ad98-d0d8e8fed048 hash_id 79c9ec234a8c28bf6e93dc7c2fd7124fe96c5464de97873885932fe355c53753
+2026-05-29T09:53:09.159574Z INFO: Worker WorkerId(node1) Ready (total: 4 CC: 40CU ACC: 40CU)
+2026-05-29T09:53:09.159577Z INFO: [Setup] Worker WorkerId(node1) finished setup, now Ready
+2026-05-29T09:53:09.159588Z INFO: [Setup] All workers acknowledged setup for job_id dce8e7d2-44f2-408e-ad98-d0d8e8fed048
+2026-05-29T09:53:09.159613Z DEBUG: gRPC call OK
+2026-05-29T09:53:09.159617Z DEBUG: close
+2026-05-29T09:53:09.311631Z DEBUG: new
+2026-05-29T09:53:09.335819Z INFO: [Job] Started JobId(4b59d8fe…) successfully Capacity: 40CU Workers: 4
+2026-05-29T09:53:09.380450Z INFO: Job JobId(4b59d8fe…) using inline input data (8549632 bytes)
+2026-05-29T09:53:09.384182Z INFO: [Phase1] Started with 4 workers for JobId(4b59d8fe…)
+2026-05-29T09:53:09.384563Z DEBUG: gRPC call OK
+2026-05-29T09:53:09.384572Z DEBUG: close
+2026-05-29T09:53:09.385093Z DEBUG: new
+2026-05-29T09:53:12.283595Z INFO: [Phase1] WorkerId(node4) finished phase 1 for JobId(4b59d8fe…) (1/4 workers done, Phase: 2.947s, Delay: 0.057s, Witness: 2.225s, Asm Execution: 0.636s at 479.19495 MHz)
+2026-05-29T09:53:12.304239Z INFO: [Phase1] WorkerId(node3) finished phase 1 for JobId(4b59d8fe…) (2/4 workers done, Phase: 2.968s, Delay: 0.058s, Witness: 2.232s, Asm Execution: 0.649s at 469.81808 MHz)
+2026-05-29T09:53:12.542833Z INFO: [Phase1] WorkerId(node1) finished phase 1 for JobId(4b59d8fe…) (3/4 workers done, Phase: 3.207s, Delay: 0.096s, Witness: 2.445s, Asm Execution: 0.634s at 481.03238 MHz)
+2026-05-29T09:53:12.551713Z INFO: [Phase1] WorkerId(node2) finished phase 1 for JobId(4b59d8fe…) (4/4 workers done, Phase: 3.215s, Delay: 0.057s, Witness: 2.481s, Asm Execution: 0.647s at 471.01254 MHz)
+2026-05-29T09:53:12.551719Z INFO: Execution Summary: 
+2026-05-29T09:53:12.551748Z INFO: [Phase2] Started with 4 workers for JobId(4b59d8fe…)
+2026-05-29T09:53:14.385630Z DEBUG: gRPC call OK
+2026-05-29T09:53:14.385658Z DEBUG: close
+2026-05-29T09:53:14.386432Z DEBUG: new
+2026-05-29T09:53:15.821539Z INFO: [Phase3] Assigned worker WorkerId(node3) as aggregator for job JobId(4b59d8fe…)
+2026-05-29T09:53:15.821558Z INFO: [Phase2] WorkerId(node3) finished phase 2 for JobId(4b59d8fe…) (1 / 4 workers done, 3.269s)
+2026-05-29T09:53:16.074624Z INFO: Worker WorkerId(node1) Ready (total: 4 CC: 40CU ACC: 10CU)
+2026-05-29T09:53:16.074641Z INFO: [Phase2] WorkerId(node1) finished phase 2 for JobId(4b59d8fe…) (2 / 4 workers done, 3.522s)
+2026-05-29T09:53:16.164293Z INFO: Worker WorkerId(node2) Ready (total: 4 CC: 40CU ACC: 20CU)
+2026-05-29T09:53:16.164312Z INFO: [Phase2] WorkerId(node2) finished phase 2 for JobId(4b59d8fe…) (3 / 4 workers done, 3.612s)
+2026-05-29T09:53:16.373439Z INFO: Worker WorkerId(node4) Ready (total: 4 CC: 40CU ACC: 30CU)
+2026-05-29T09:53:16.373458Z INFO: [Phase2] WorkerId(node4) finished phase 2 for JobId(4b59d8fe…) (4 / 4 workers done, 3.821s)
+2026-05-29T09:53:16.678479Z INFO: Worker WorkerId(node3) Ready (total: 4 CC: 40CU ACC: 40CU)
+2026-05-29T09:53:16.678668Z INFO: [Phase3] WorkerId WorkerId(node3) done, phase 3 completed for JobId(4b59d8fe…) (0.305s)
+2026-05-29T09:53:16.678680Z INFO: [Job] Finished JobId(4b59d8fe…) successfully ✔ Duration: 7.342s (3.216s+3.822s+0.305s) Steps: 304.964.424 Instances: 174 Capacity: 40CU
+2026-05-29T09:53:16.678693Z INFO: [Job] Contributions Performance for JobId(4b59d8fe…) - Avg: 3.084s, Best: WorkerId(node4) (2.947s), Worst: WorkerId(node2) (3.215s), Diff: 9.1%
+2026-05-29T09:53:16.678698Z INFO: [Job] Contributions Delay for JobId(4b59d8fe…) - Avg: 0.067s, Best: WorkerId(node4) (0.057s), Worst: WorkerId(node1) (0.096s), Diff: 68.4%
+2026-05-29T09:53:16.678703Z INFO: [Job] Contributions Witness for JobId(4b59d8fe…) - Avg: 2.346s, Best: WorkerId(node4) (2.225s), Worst: WorkerId(node2) (2.481s), Diff: 11.5%
+2026-05-29T09:53:16.678706Z INFO: [Job] Contributions ASM for JobId(4b59d8fe…) - Avg: 0.642s, Best: WorkerId(node1) (0.634s @ 481.0MHz), Worst: WorkerId(node3) (0.649s @ 469.8MHz), Diff: 2.4%
+2026-05-29T09:53:16.678711Z INFO: [Job] Prove Performance for JobId(4b59d8fe…) - Avg: 3.556s, Best: WorkerId(node3) (3.269s), Worst: WorkerId(node4) (3.821s), Diff: 16.9%
+2026-05-29T09:53:16.678716Z INFO: [Coordinator] Started at 2026-05-29 09:51:19 UTC — Uptime: 1m 56s
+2026-05-29T09:53:16.678723Z INFO: [Coordinator] Registrations: 4 Reconnections: 0
+2026-05-29T09:53:16.696691Z DEBUG: gRPC call OK
+2026-05-29T09:53:16.696697Z DEBUG: close
+2026-05-29T09:53:16.732092Z DEBUG: new
+2026-05-29T09:53:16.751065Z INFO: [Job] Started JobId(10dcc76d…) successfully Capacity: 40CU Workers: 4
+2026-05-29T09:53:16.791928Z INFO: Job JobId(10dcc76d…) using inline input data (7699640 bytes)
+2026-05-29T09:53:16.795918Z INFO: [Phase1] Started with 4 workers for JobId(10dcc76d…)
+2026-05-29T09:53:16.795956Z DEBUG: gRPC call OK
+2026-05-29T09:53:16.795975Z DEBUG: close
+2026-05-29T09:53:16.796507Z DEBUG: new
+2026-05-29T09:53:18.608036Z INFO: [Phase1] WorkerId(node3) finished phase 1 for JobId(10dcc76d…) (1/4 workers done, Phase: 1.856s, Delay: 0.051s, Witness: 1.286s, Asm Execution: 0.502s at 551.03485 MHz)
+2026-05-29T09:53:18.716462Z INFO: [Phase1] WorkerId(node2) finished phase 1 for JobId(10dcc76d…) (2/4 workers done, Phase: 1.965s, Delay: 0.052s, Witness: 1.399s, Asm Execution: 0.494s at 560.2863 MHz)
+2026-05-29T09:53:18.729851Z INFO: [Phase1] WorkerId(node1) finished phase 1 for JobId(10dcc76d…) (3/4 workers done, Phase: 1.978s, Delay: 0.051s, Witness: 1.390s, Asm Execution: 0.516s at 536.18207 MHz)
+2026-05-29T09:53:18.842062Z INFO: [Phase1] WorkerId(node4) finished phase 1 for JobId(10dcc76d…) (4/4 workers done, Phase: 2.090s, Delay: 0.052s, Witness: 1.504s, Asm Execution: 0.515s at 536.9013 MHz)
+2026-05-29T09:53:18.842069Z INFO: Execution Summary: 
+2026-05-29T09:53:18.842107Z INFO: [Phase2] Started with 4 workers for JobId(10dcc76d…)
+2026-05-29T09:53:21.797894Z DEBUG: slow gRPC call
+2026-05-29T09:53:21.797918Z DEBUG: close
+2026-05-29T09:53:21.798427Z DEBUG: new
+2026-05-29T09:53:21.910212Z INFO: [Phase3] Assigned worker WorkerId(node2) as aggregator for job JobId(10dcc76d…)
+2026-05-29T09:53:21.910221Z INFO: [Phase2] WorkerId(node2) finished phase 2 for JobId(10dcc76d…) (1 / 4 workers done, 3.068s)
+2026-05-29T09:53:21.993107Z INFO: Worker WorkerId(node1) Ready (total: 4 CC: 40CU ACC: 10CU)
+2026-05-29T09:53:21.993112Z INFO: [Phase2] WorkerId(node1) finished phase 2 for JobId(10dcc76d…) (2 / 4 workers done, 3.151s)
+2026-05-29T09:53:22.036732Z INFO: Worker WorkerId(node4) Ready (total: 4 CC: 40CU ACC: 20CU)
+2026-05-29T09:53:22.036745Z INFO: [Phase2] WorkerId(node4) finished phase 2 for JobId(10dcc76d…) (3 / 4 workers done, 3.194s)
+2026-05-29T09:53:22.239644Z INFO: Worker WorkerId(node3) Ready (total: 4 CC: 40CU ACC: 30CU)
+2026-05-29T09:53:22.239648Z INFO: [Phase2] WorkerId(node3) finished phase 2 for JobId(10dcc76d…) (4 / 4 workers done, 3.397s)
+2026-05-29T09:53:22.541500Z INFO: Worker WorkerId(node2) Ready (total: 4 CC: 40CU ACC: 40CU)
+2026-05-29T09:53:22.541637Z INFO: [Phase3] WorkerId WorkerId(node2) done, phase 3 completed for JobId(10dcc76d…) (0.302s)
+2026-05-29T09:53:22.541647Z INFO: [Job] Finished JobId(10dcc76d…) successfully ✔ Duration: 5.790s (2.091s+3.398s+0.302s) Steps: 276.580.021 Instances: 158 Capacity: 40CU
+2026-05-29T09:53:22.541654Z INFO: [Job] Contributions Performance for JobId(10dcc76d…) - Avg: 1.972s, Best: WorkerId(node3) (1.856s), Worst: WorkerId(node4) (2.090s), Diff: 12.6%
+2026-05-29T09:53:22.541660Z INFO: [Job] Contributions Delay for JobId(10dcc76d…) - Avg: 0.051s, Best: WorkerId(node1) (0.051s), Worst: WorkerId(node2) (0.052s), Diff: 2.0%
+2026-05-29T09:53:22.541665Z INFO: [Job] Contributions Witness for JobId(10dcc76d…) - Avg: 1.395s, Best: WorkerId(node3) (1.286s), Worst: WorkerId(node4) (1.504s), Diff: 17.0%
+2026-05-29T09:53:22.541670Z INFO: [Job] Contributions ASM for JobId(10dcc76d…) - Avg: 0.507s, Best: WorkerId(node2) (0.494s @ 560.3MHz), Worst: WorkerId(node1) (0.516s @ 536.2MHz), Diff: 4.5%
+2026-05-29T09:53:22.541675Z INFO: [Job] Prove Performance for JobId(10dcc76d…) - Avg: 3.203s, Best: WorkerId(node2) (3.068s), Worst: WorkerId(node3) (3.397s), Diff: 10.7%
+2026-05-29T09:53:22.541681Z INFO: [Coordinator] Started at 2026-05-29 09:51:19 UTC — Uptime: 2m 2s
+2026-05-29T09:53:22.541688Z INFO: [Coordinator] Registrations: 4 Reconnections: 0
+2026-05-29T09:53:22.559544Z DEBUG: gRPC call OK
+2026-05-29T09:53:22.559550Z DEBUG: close
+2026-05-29T09:53:22.584580Z DEBUG: new
+2026-05-29T09:53:22.591497Z INFO: [Job] Started JobId(f2134c6e…) successfully Capacity: 40CU Workers: 4
+2026-05-29T09:53:22.608349Z INFO: Job JobId(f2134c6e…) using inline input data (2963872 bytes)
+2026-05-29T09:53:22.609651Z INFO: [Phase1] Started with 4 workers for JobId(f2134c6e…)
+2026-05-29T09:53:22.609662Z DEBUG: gRPC call OK
+2026-05-29T09:53:22.609666Z DEBUG: close
+2026-05-29T09:53:22.610115Z DEBUG: new
+2026-05-29T09:53:23.667229Z INFO: [Phase1] WorkerId(node1) finished phase 1 for JobId(f2134c6e…) (1/4 workers done, Phase: 1.075s, Delay: 0.021s, Witness: 0.566s, Asm Execution: 0.471s at 224.87975 MHz)
+2026-05-29T09:53:23.692158Z INFO: [Phase1] WorkerId(node3) finished phase 1 for JobId(f2134c6e…) (2/4 workers done, Phase: 1.100s, Delay: 0.022s, Witness: 0.586s, Asm Execution: 0.475s at 222.6197 MHz)
+2026-05-29T09:53:23.727792Z INFO: [Phase1] WorkerId(node4) finished phase 1 for JobId(f2134c6e…) (3/4 workers done, Phase: 1.136s, Delay: 0.021s, Witness: 0.634s, Asm Execution: 0.465s at 227.76305 MHz)
+2026-05-29T09:53:23.741372Z INFO: [Phase1] WorkerId(node2) finished phase 1 for JobId(f2134c6e…) (4/4 workers done, Phase: 1.149s, Delay: 0.022s, Witness: 0.645s, Asm Execution: 0.465s at 227.48364 MHz)
+2026-05-29T09:53:23.741378Z INFO: Execution Summary: 
+2026-05-29T09:53:23.741418Z INFO: [Phase2] Started with 4 workers for JobId(f2134c6e…)
+2026-05-29T09:53:25.512197Z INFO: [Phase3] Assigned worker WorkerId(node3) as aggregator for job JobId(f2134c6e…)
+2026-05-29T09:53:25.512221Z INFO: [Phase2] WorkerId(node3) finished phase 2 for JobId(f2134c6e…) (1 / 4 workers done, 1.770s)
+2026-05-29T09:53:25.843262Z INFO: Worker WorkerId(node2) Ready (total: 4 CC: 40CU ACC: 10CU)
+2026-05-29T09:53:25.843281Z INFO: [Phase2] WorkerId(node2) finished phase 2 for JobId(f2134c6e…) (2 / 4 workers done, 2.101s)
+2026-05-29T09:53:25.888061Z INFO: Worker WorkerId(node4) Ready (total: 4 CC: 40CU ACC: 20CU)
+2026-05-29T09:53:25.888083Z INFO: [Phase2] WorkerId(node4) finished phase 2 for JobId(f2134c6e…) (3 / 4 workers done, 2.146s)
+2026-05-29T09:53:25.978223Z INFO: Worker WorkerId(node1) Ready (total: 4 CC: 40CU ACC: 30CU)
+2026-05-29T09:53:25.978241Z INFO: [Phase2] WorkerId(node1) finished phase 2 for JobId(f2134c6e…) (4 / 4 workers done, 2.236s)
+2026-05-29T09:53:26.291382Z INFO: Worker WorkerId(node3) Ready (total: 4 CC: 40CU ACC: 40CU)
+2026-05-29T09:53:26.291538Z INFO: [Phase3] WorkerId WorkerId(node3) done, phase 3 completed for JobId(f2134c6e…) (0.313s)
+2026-05-29T09:53:26.291552Z INFO: [Job] Finished JobId(f2134c6e…) successfully ✔ Duration: 3.700s (1.150s+2.237s+0.313s) Steps: 105.855.676 Instances: 73 Capacity: 40CU
+2026-05-29T09:53:26.291558Z INFO: [Job] Contributions Performance for JobId(f2134c6e…) - Avg: 1.115s, Best: WorkerId(node1) (1.075s), Worst: WorkerId(node2) (1.149s), Diff: 6.9%
+2026-05-29T09:53:26.291564Z INFO: [Job] Contributions Delay for JobId(f2134c6e…) - Avg: 0.021s, Best: WorkerId(node4) (0.021s), Worst: WorkerId(node2) (0.022s), Diff: 4.8%
+2026-05-29T09:53:26.291575Z INFO: [Job] Contributions Witness for JobId(f2134c6e…) - Avg: 0.608s, Best: WorkerId(node1) (0.566s), Worst: WorkerId(node2) (0.645s), Diff: 14.0%
+2026-05-29T09:53:26.291579Z INFO: [Job] Contributions ASM for JobId(f2134c6e…) - Avg: 0.469s, Best: WorkerId(node4) (0.465s @ 227.8MHz), Worst: WorkerId(node3) (0.475s @ 222.6MHz), Diff: 2.3%
+2026-05-29T09:53:26.291585Z INFO: [Job] Prove Performance for JobId(f2134c6e…) - Avg: 2.063s, Best: WorkerId(node3) (1.770s), Worst: WorkerId(node1) (2.236s), Diff: 26.3%
+2026-05-29T09:53:26.291591Z INFO: [Coordinator] Started at 2026-05-29 09:51:19 UTC — Uptime: 2m 6s
+2026-05-29T09:53:26.291598Z INFO: [Coordinator] Registrations: 4 Reconnections: 0
+2026-05-29T09:53:26.310083Z DEBUG: gRPC call OK
+2026-05-29T09:53:26.310091Z DEBUG: close
+2026-05-29T09:53:26.365130Z DEBUG: new
+2026-05-29T09:53:26.399784Z INFO: [Job] Started JobId(cdeebfce…) successfully Capacity: 40CU Workers: 4
+2026-05-29T09:53:26.475612Z INFO: Job JobId(cdeebfce…) using inline input data (14200952 bytes)
+2026-05-29T09:53:26.482797Z INFO: [Phase1] Started with 4 workers for JobId(cdeebfce…)
+2026-05-29T09:53:26.482822Z DEBUG: gRPC call OK
+2026-05-29T09:53:26.482830Z DEBUG: close
+2026-05-29T09:53:26.483411Z DEBUG: new
+2026-05-29T09:53:29.989798Z INFO: [Phase1] WorkerId(node1) finished phase 1 for JobId(cdeebfce…) (1/4 workers done, Phase: 3.589s, Delay: 0.094s, Witness: 2.411s, Asm Execution: 1.057s at 570.8964 MHz)
+2026-05-29T09:53:30.017606Z INFO: [Phase1] WorkerId(node2) finished phase 1 for JobId(cdeebfce…) (2/4 workers done, Phase: 3.617s, Delay: 0.096s, Witness: 2.430s, Asm Execution: 1.070s at 564.115 MHz)
+2026-05-29T09:53:30.029262Z INFO: [Phase1] WorkerId(node4) finished phase 1 for JobId(cdeebfce…) (3/4 workers done, Phase: 3.629s, Delay: 0.096s, Witness: 2.478s, Asm Execution: 1.032s at 584.88257 MHz)
+2026-05-29T09:53:30.105889Z INFO: [Phase1] WorkerId(node3) finished phase 1 for JobId(cdeebfce…) (4/4 workers done, Phase: 3.706s, Delay: 0.095s, Witness: 2.508s, Asm Execution: 1.079s at 559.0324 MHz)
+2026-05-29T09:53:30.105895Z INFO: Execution Summary: 
+2026-05-29T09:53:30.105936Z INFO: [Phase2] Started with 4 workers for JobId(cdeebfce…)
+2026-05-29T09:53:31.484582Z DEBUG: slow gRPC call
+2026-05-29T09:53:31.484607Z DEBUG: close
+2026-05-29T09:53:31.485275Z DEBUG: new
+2026-05-29T09:53:35.939417Z INFO: [Phase3] Assigned worker WorkerId(node2) as aggregator for job JobId(cdeebfce…)
+2026-05-29T09:53:35.939435Z INFO: [Phase2] WorkerId(node2) finished phase 2 for JobId(cdeebfce…) (1 / 4 workers done, 5.833s)
+2026-05-29T09:53:35.961046Z INFO: Worker WorkerId(node4) Ready (total: 4 CC: 40CU ACC: 10CU)
+2026-05-29T09:53:35.961063Z INFO: [Phase2] WorkerId(node4) finished phase 2 for JobId(cdeebfce…) (2 / 4 workers done, 5.855s)
+2026-05-29T09:53:36.045550Z INFO: Worker WorkerId(node3) Ready (total: 4 CC: 40CU ACC: 20CU)
+2026-05-29T09:53:36.045563Z INFO: [Phase2] WorkerId(node3) finished phase 2 for JobId(cdeebfce…) (3 / 4 workers done, 5.939s)
+2026-05-29T09:53:36.404325Z INFO: Worker WorkerId(node1) Ready (total: 4 CC: 40CU ACC: 30CU)
+2026-05-29T09:53:36.404344Z INFO: [Phase2] WorkerId(node1) finished phase 2 for JobId(cdeebfce…) (4 / 4 workers done, 6.298s)
+2026-05-29T09:53:36.486859Z DEBUG: slow gRPC call
+2026-05-29T09:53:36.486885Z DEBUG: close
+2026-05-29T09:53:36.487463Z DEBUG: new
+2026-05-29T09:53:36.709029Z INFO: Worker WorkerId(node2) Ready (total: 4 CC: 40CU ACC: 40CU)
+2026-05-29T09:53:36.709178Z INFO: [Phase3] WorkerId WorkerId(node2) done, phase 3 completed for JobId(cdeebfce…) (0.305s)
+2026-05-29T09:53:36.709186Z INFO: [Job] Finished JobId(cdeebfce…) successfully ✔ Duration: 10.309s (3.706s+6.298s+0.305s) Steps: 603.454.719 Instances: 326 Capacity: 40CU
+2026-05-29T09:53:36.709191Z INFO: [Job] Contributions Performance for JobId(cdeebfce…) - Avg: 3.635s, Best: WorkerId(node1) (3.589s), Worst: WorkerId(node3) (3.706s), Diff: 3.3%
+2026-05-29T09:53:36.709194Z INFO: [Job] Contributions Delay for JobId(cdeebfce…) - Avg: 0.095s, Best: WorkerId(node1) (0.094s), Worst: WorkerId(node2) (0.096s), Diff: 2.1%
+2026-05-29T09:53:36.709197Z INFO: [Job] Contributions Witness for JobId(cdeebfce…) - Avg: 2.457s, Best: WorkerId(node1) (2.411s), Worst: WorkerId(node3) (2.508s), Diff: 4.0%
+2026-05-29T09:53:36.709199Z INFO: [Job] Contributions ASM for JobId(cdeebfce…) - Avg: 1.059s, Best: WorkerId(node4) (1.032s @ 584.9MHz), Worst: WorkerId(node3) (1.079s @ 559.0MHz), Diff: 4.6%
+2026-05-29T09:53:36.709203Z INFO: [Job] Prove Performance for JobId(cdeebfce…) - Avg: 5.981s, Best: WorkerId(node2) (5.833s), Worst: WorkerId(node1) (6.298s), Diff: 8.0%
+2026-05-29T09:53:36.709206Z INFO: [Coordinator] Started at 2026-05-29 09:51:19 UTC — Uptime: 2m 16s
+2026-05-29T09:53:36.709212Z INFO: [Coordinator] Registrations: 4 Reconnections: 0
+2026-05-29T09:53:36.727004Z DEBUG: gRPC call OK
+2026-05-29T09:53:36.727008Z DEBUG: close
+2026-05-29T09:53:36.768964Z DEBUG: new
+2026-05-29T09:53:36.791549Z INFO: [Job] Started JobId(6a2f4f7d…) successfully Capacity: 40CU Workers: 4
+2026-05-29T09:53:36.844823Z INFO: Job JobId(6a2f4f7d…) using inline input data (9071256 bytes)
+2026-05-29T09:53:36.849045Z INFO: [Phase1] Started with 4 workers for JobId(6a2f4f7d…)
+2026-05-29T09:53:36.849068Z DEBUG: gRPC call OK
+2026-05-29T09:53:36.849076Z DEBUG: close
+2026-05-29T09:53:36.850048Z DEBUG: new
+2026-05-29T09:53:38.915311Z INFO: [Phase1] WorkerId(node2) finished phase 1 for JobId(6a2f4f7d…) (1/4 workers done, Phase: 2.123s, Delay: 0.068s, Witness: 1.347s, Asm Execution: 0.688s at 480.7777 MHz)
+2026-05-29T09:53:38.971950Z INFO: [Phase1] WorkerId(node4) finished phase 1 for JobId(6a2f4f7d…) (2/4 workers done, Phase: 2.180s, Delay: 0.069s, Witness: 1.399s, Asm Execution: 0.692s at 477.61346 MHz)
+2026-05-29T09:53:39.019220Z INFO: [Phase1] WorkerId(node1) finished phase 1 for JobId(6a2f4f7d…) (3/4 workers done, Phase: 2.227s, Delay: 0.067s, Witness: 1.444s, Asm Execution: 0.693s at 477.3762 MHz)
+2026-05-29T09:53:39.046930Z INFO: [Phase1] WorkerId(node3) finished phase 1 for JobId(6a2f4f7d…) (4/4 workers done, Phase: 2.255s, Delay: 0.069s, Witness: 1.464s, Asm Execution: 0.701s at 471.956 MHz)
+2026-05-29T09:53:39.046937Z INFO: Execution Summary: 
+2026-05-29T09:53:39.046984Z INFO: [Phase2] Started with 4 workers for JobId(6a2f4f7d…)
+2026-05-29T09:53:41.850585Z DEBUG: gRPC call OK
+2026-05-29T09:53:41.850612Z DEBUG: close
+2026-05-29T09:53:41.851321Z DEBUG: new
+2026-05-29T09:53:42.517353Z INFO: [Phase3] Assigned worker WorkerId(node4) as aggregator for job JobId(6a2f4f7d…)
+2026-05-29T09:53:42.517370Z INFO: [Phase2] WorkerId(node4) finished phase 2 for JobId(6a2f4f7d…) (1 / 4 workers done, 3.470s)
+2026-05-29T09:53:42.734973Z INFO: Worker WorkerId(node1) Ready (total: 4 CC: 40CU ACC: 10CU)
+2026-05-29T09:53:42.734991Z INFO: [Phase2] WorkerId(node1) finished phase 2 for JobId(6a2f4f7d…) (2 / 4 workers done, 3.688s)
+2026-05-29T09:53:42.850031Z INFO: Worker WorkerId(node3) Ready (total: 4 CC: 40CU ACC: 20CU)
+2026-05-29T09:53:42.850040Z INFO: [Phase2] WorkerId(node3) finished phase 2 for JobId(6a2f4f7d…) (3 / 4 workers done, 3.803s)
+2026-05-29T09:53:42.931008Z INFO: Worker WorkerId(node2) Ready (total: 4 CC: 40CU ACC: 30CU)
+2026-05-29T09:53:42.931019Z INFO: [Phase2] WorkerId(node2) finished phase 2 for JobId(6a2f4f7d…) (4 / 4 workers done, 3.884s)
+2026-05-29T09:53:43.245634Z INFO: Worker WorkerId(node4) Ready (total: 4 CC: 40CU ACC: 40CU)
+2026-05-29T09:53:43.245712Z INFO: [Phase3] WorkerId WorkerId(node4) done, phase 3 completed for JobId(6a2f4f7d…) (0.315s)
+2026-05-29T09:53:43.245720Z INFO: [Job] Finished JobId(6a2f4f7d…) successfully ✔ Duration: 6.454s (2.255s+3.884s+0.315s) Steps: 330.715.775 Instances: 186 Capacity: 40CU
+2026-05-29T09:53:43.245723Z INFO: [Job] Contributions Performance for JobId(6a2f4f7d…) - Avg: 2.196s, Best: WorkerId(node2) (2.123s), Worst: WorkerId(node3) (2.255s), Diff: 6.2%
+2026-05-29T09:53:43.245729Z INFO: [Job] Contributions Delay for JobId(6a2f4f7d…) - Avg: 0.068s, Best: WorkerId(node1) (0.067s), Worst: WorkerId(node3) (0.069s), Diff: 3.0%
+2026-05-29T09:53:43.245732Z INFO: [Job] Contributions Witness for JobId(6a2f4f7d…) - Avg: 1.413s, Best: WorkerId(node2) (1.347s), Worst: WorkerId(node3) (1.464s), Diff: 8.7%
+2026-05-29T09:53:43.245736Z INFO: [Job] Contributions ASM for JobId(6a2f4f7d…) - Avg: 0.693s, Best: WorkerId(node2) (0.688s @ 480.8MHz), Worst: WorkerId(node3) (0.701s @ 472.0MHz), Diff: 1.9%
+2026-05-29T09:53:43.245739Z INFO: [Job] Prove Performance for JobId(6a2f4f7d…) - Avg: 3.711s, Best: WorkerId(node4) (3.470s), Worst: WorkerId(node2) (3.884s), Diff: 11.9%
+2026-05-29T09:53:43.245742Z INFO: [Coordinator] Started at 2026-05-29 09:51:19 UTC — Uptime: 2m 23s
+2026-05-29T09:53:43.245747Z INFO: [Coordinator] Registrations: 4 Reconnections: 0
+2026-05-29T09:53:43.263589Z DEBUG: gRPC call OK
+2026-05-29T09:53:43.263597Z DEBUG: close
+2026-05-29T09:53:43.292106Z DEBUG: new
+2026-05-29T09:53:43.308135Z INFO: [Job] Started JobId(315a0b98…) successfully Capacity: 40CU Workers: 4
+2026-05-29T09:53:43.341754Z INFO: Job JobId(315a0b98…) using inline input data (6225080 bytes)
+2026-05-29T09:53:43.345329Z INFO: [Phase1] Started with 4 workers for JobId(315a0b98…)
+2026-05-29T09:53:43.345352Z DEBUG: gRPC call OK
+2026-05-29T09:53:43.345362Z DEBUG: close
+2026-05-29T09:53:43.346027Z DEBUG: new
+2026-05-29T09:53:44.789302Z INFO: [Phase1] WorkerId(node3) finished phase 1 for JobId(315a0b98…) (1/4 workers done, Phase: 1.481s, Delay: 0.045s, Witness: 0.945s, Asm Execution: 0.473s at 480.94107 MHz)
+2026-05-29T09:53:44.805097Z INFO: [Phase1] WorkerId(node1) finished phase 1 for JobId(315a0b98…) (2/4 workers done, Phase: 1.496s, Delay: 0.042s, Witness: 0.956s, Asm Execution: 0.478s at 475.86996 MHz)
+2026-05-29T09:53:44.807960Z INFO: [Phase1] WorkerId(node2) finished phase 1 for JobId(315a0b98…) (3/4 workers done, Phase: 1.499s, Delay: 0.044s, Witness: 0.952s, Asm Execution: 0.482s at 471.8877 MHz)
+2026-05-29T09:53:44.813250Z INFO: [Phase1] WorkerId(node4) finished phase 1 for JobId(315a0b98…) (4/4 workers done, Phase: 1.505s, Delay: 0.043s, Witness: 0.966s, Asm Execution: 0.476s at 477.19922 MHz)
+2026-05-29T09:53:44.813252Z INFO: Execution Summary: 
+2026-05-29T09:53:44.813280Z INFO: [Phase2] Started with 4 workers for JobId(315a0b98…)
+2026-05-29T09:53:47.679687Z INFO: [Phase3] Assigned worker WorkerId(node1) as aggregator for job JobId(315a0b98…)
+2026-05-29T09:53:47.679705Z INFO: [Phase2] WorkerId(node1) finished phase 2 for JobId(315a0b98…) (1 / 4 workers done, 2.866s)
+2026-05-29T09:53:47.724487Z INFO: Worker WorkerId(node2) Ready (total: 4 CC: 40CU ACC: 10CU)
+2026-05-29T09:53:47.724506Z INFO: [Phase2] WorkerId(node2) finished phase 2 for JobId(315a0b98…) (2 / 4 workers done, 2.911s)
+2026-05-29T09:53:47.833678Z INFO: Worker WorkerId(node4) Ready (total: 4 CC: 40CU ACC: 20CU)
+2026-05-29T09:53:47.833695Z INFO: [Phase2] WorkerId(node4) finished phase 2 for JobId(315a0b98…) (3 / 4 workers done, 3.020s)
+2026-05-29T09:53:47.842865Z INFO: Worker WorkerId(node3) Ready (total: 4 CC: 40CU ACC: 30CU)
+2026-05-29T09:53:47.842876Z INFO: [Phase2] WorkerId(node3) finished phase 2 for JobId(315a0b98…) (4 / 4 workers done, 3.029s)
+2026-05-29T09:53:48.249174Z INFO: Worker WorkerId(node1) Ready (total: 4 CC: 40CU ACC: 40CU)
+2026-05-29T09:53:48.249322Z INFO: [Phase3] WorkerId WorkerId(node1) done, phase 3 completed for JobId(315a0b98…) (0.406s)
+2026-05-29T09:53:48.249336Z INFO: [Job] Finished JobId(315a0b98…) successfully ✔ Duration: 4.941s (1.505s+3.030s+0.406s) Steps: 227.344.331 Instances: 136 Capacity: 40CU
+2026-05-29T09:53:48.249343Z INFO: [Job] Contributions Performance for JobId(315a0b98…) - Avg: 1.495s, Best: WorkerId(node3) (1.481s), Worst: WorkerId(node4) (1.505s), Diff: 1.6%
+2026-05-29T09:53:48.249349Z INFO: [Job] Contributions Delay for JobId(315a0b98…) - Avg: 0.043s, Best: WorkerId(node1) (0.042s), Worst: WorkerId(node3) (0.045s), Diff: 7.1%
+2026-05-29T09:53:48.249354Z INFO: [Job] Contributions Witness for JobId(315a0b98…) - Avg: 0.955s, Best: WorkerId(node3) (0.945s), Worst: WorkerId(node4) (0.966s), Diff: 2.2%
+2026-05-29T09:53:48.249360Z INFO: [Job] Contributions ASM for JobId(315a0b98…) - Avg: 0.477s, Best: WorkerId(node3) (0.473s @ 480.9MHz), Worst: WorkerId(node2) (0.482s @ 471.9MHz), Diff: 1.9%
+2026-05-29T09:53:48.249365Z INFO: [Job] Prove Performance for JobId(315a0b98…) - Avg: 2.957s, Best: WorkerId(node1) (2.866s), Worst: WorkerId(node3) (3.029s), Diff: 5.7%
+2026-05-29T09:53:48.249371Z INFO: [Coordinator] Started at 2026-05-29 09:51:19 UTC — Uptime: 2m 28s
+2026-05-29T09:53:48.249379Z INFO: [Coordinator] Registrations: 4 Reconnections: 0
+2026-05-29T09:53:48.267499Z DEBUG: gRPC call OK
+2026-05-29T09:53:48.267506Z DEBUG: close
+2026-05-29T09:53:48.304828Z DEBUG: new
+2026-05-29T09:53:48.326898Z INFO: [Job] Started JobId(2ebee0f6…) successfully Capacity: 40CU Workers: 4
+2026-05-29T09:53:48.377512Z INFO: Job JobId(2ebee0f6…) using inline input data (8928640 bytes)
+2026-05-29T09:53:48.381733Z INFO: [Phase1] Started with 4 workers for JobId(2ebee0f6…)
+2026-05-29T09:53:48.381757Z DEBUG: gRPC call OK
+2026-05-29T09:53:48.381777Z DEBUG: close
+2026-05-29T09:53:48.382427Z DEBUG: new
+2026-05-29T09:53:50.469017Z INFO: [Phase1] WorkerId(node3) finished phase 1 for JobId(2ebee0f6…) (1/4 workers done, Phase: 2.142s, Delay: 0.064s, Witness: 1.344s, Asm Execution: 0.713s at 471.49774 MHz)
+2026-05-29T09:53:50.508380Z INFO: [Phase1] WorkerId(node1) finished phase 1 for JobId(2ebee0f6…) (2/4 workers done, Phase: 2.181s, Delay: 0.063s, Witness: 1.382s, Asm Execution: 0.718s at 468.65543 MHz)
+2026-05-29T09:53:50.576725Z INFO: [Phase1] WorkerId(node2) finished phase 1 for JobId(2ebee0f6…) (3/4 workers done, Phase: 2.249s, Delay: 0.064s, Witness: 1.427s, Asm Execution: 0.741s at 453.92807 MHz)
+2026-05-29T09:53:50.620707Z INFO: [Phase1] WorkerId(node4) finished phase 1 for JobId(2ebee0f6…) (4/4 workers done, Phase: 2.293s, Delay: 0.064s, Witness: 1.468s, Asm Execution: 0.744s at 452.2614 MHz)
+2026-05-29T09:53:50.620713Z INFO: Execution Summary: 
+2026-05-29T09:53:50.620750Z INFO: [Phase2] Started with 4 workers for JobId(2ebee0f6…)
+2026-05-29T09:53:53.383902Z DEBUG: slow gRPC call
+2026-05-29T09:53:53.383928Z DEBUG: close
+2026-05-29T09:53:53.384700Z DEBUG: new
+2026-05-29T09:53:54.141055Z INFO: [Phase3] Assigned worker WorkerId(node3) as aggregator for job JobId(2ebee0f6…)
+2026-05-29T09:53:54.141071Z INFO: [Phase2] WorkerId(node3) finished phase 2 for JobId(2ebee0f6…) (1 / 4 workers done, 3.520s)
+2026-05-29T09:53:54.186339Z INFO: Worker WorkerId(node2) Ready (total: 4 CC: 40CU ACC: 10CU)
+2026-05-29T09:53:54.186370Z INFO: [Phase2] WorkerId(node2) finished phase 2 for JobId(2ebee0f6…) (2 / 4 workers done, 3.565s)
+2026-05-29T09:53:54.212315Z INFO: Worker WorkerId(node4) Ready (total: 4 CC: 40CU ACC: 20CU)
+2026-05-29T09:53:54.212336Z INFO: [Phase2] WorkerId(node4) finished phase 2 for JobId(2ebee0f6…) (3 / 4 workers done, 3.591s)
+2026-05-29T09:53:54.724985Z INFO: Worker WorkerId(node1) Ready (total: 4 CC: 40CU ACC: 30CU)
+2026-05-29T09:53:54.725002Z INFO: [Phase2] WorkerId(node1) finished phase 2 for JobId(2ebee0f6…) (4 / 4 workers done, 4.104s)
+2026-05-29T09:53:55.036210Z INFO: Worker WorkerId(node3) Ready (total: 4 CC: 40CU ACC: 40CU)
+2026-05-29T09:53:55.036358Z INFO: [Phase3] WorkerId WorkerId(node3) done, phase 3 completed for JobId(2ebee0f6…) (0.311s)
+2026-05-29T09:53:55.036372Z INFO: [Job] Finished JobId(2ebee0f6…) successfully ✔ Duration: 6.709s (2.294s+4.104s+0.311s) Steps: 336.411.259 Instances: 188 Capacity: 40CU
+2026-05-29T09:53:55.036381Z INFO: [Job] Contributions Performance for JobId(2ebee0f6…) - Avg: 2.216s, Best: WorkerId(node3) (2.142s), Worst: WorkerId(node4) (2.293s), Diff: 7.0%
+2026-05-29T09:53:55.036388Z INFO: [Job] Contributions Delay for JobId(2ebee0f6…) - Avg: 0.064s, Best: WorkerId(node1) (0.063s), Worst: WorkerId(node4) (0.064s), Diff: 1.6%
+2026-05-29T09:53:55.036393Z INFO: [Job] Contributions Witness for JobId(2ebee0f6…) - Avg: 1.405s, Best: WorkerId(node3) (1.344s), Worst: WorkerId(node4) (1.468s), Diff: 9.2%
+2026-05-29T09:53:55.036398Z INFO: [Job] Contributions ASM for JobId(2ebee0f6…) - Avg: 0.729s, Best: WorkerId(node3) (0.713s @ 471.5MHz), Worst: WorkerId(node4) (0.744s @ 452.3MHz), Diff: 4.3%
+2026-05-29T09:53:55.036407Z INFO: [Job] Prove Performance for JobId(2ebee0f6…) - Avg: 3.695s, Best: WorkerId(node3) (3.520s), Worst: WorkerId(node1) (4.104s), Diff: 16.6%
+2026-05-29T09:53:55.036413Z INFO: [Coordinator] Started at 2026-05-29 09:51:19 UTC — Uptime: 2m 35s
+2026-05-29T09:53:55.036420Z INFO: [Coordinator] Registrations: 4 Reconnections: 0
+2026-05-29T09:53:55.055904Z DEBUG: gRPC call OK
+2026-05-29T09:53:55.055919Z DEBUG: close
+2026-05-29T09:53:55.092862Z DEBUG: new
+2026-05-29T09:53:55.113899Z INFO: [Job] Started JobId(9f1ef5a3…) successfully Capacity: 40CU Workers: 4
+2026-05-29T09:53:55.157520Z INFO: Job JobId(9f1ef5a3…) using inline input data (8571928 bytes)
+2026-05-29T09:53:55.163211Z INFO: [Phase1] Started with 4 workers for JobId(9f1ef5a3…)
+2026-05-29T09:53:55.163232Z DEBUG: gRPC call OK
+2026-05-29T09:53:55.163241Z DEBUG: close
+2026-05-29T09:53:55.163848Z DEBUG: new
+2026-05-29T09:53:57.120028Z INFO: [Phase1] WorkerId(node1) finished phase 1 for JobId(9f1ef5a3…) (1/4 workers done, Phase: 2.006s, Delay: 0.054s, Witness: 1.182s, Asm Execution: 0.749s at 439.57352 MHz)
+2026-05-29T09:53:57.241055Z INFO: [Phase1] WorkerId(node3) finished phase 1 for JobId(9f1ef5a3…) (2/4 workers done, Phase: 2.127s, Delay: 0.057s, Witness: 1.322s, Asm Execution: 0.731s at 450.59473 MHz)
+2026-05-29T09:53:57.243034Z INFO: [Phase1] WorkerId(node2) finished phase 1 for JobId(9f1ef5a3…) (3/4 workers done, Phase: 2.129s, Delay: 0.056s, Witness: 1.302s, Asm Execution: 0.753s at 437.4563 MHz)
+2026-05-29T09:53:57.261700Z INFO: [Phase1] WorkerId(node4) finished phase 1 for JobId(9f1ef5a3…) (4/4 workers done, Phase: 2.147s, Delay: 0.060s, Witness: 1.288s, Asm Execution: 0.777s at 423.7103 MHz)
+2026-05-29T09:53:57.261707Z INFO: Execution Summary: 
+2026-05-29T09:53:57.261745Z INFO: [Phase2] Started with 4 workers for JobId(9f1ef5a3…)
+2026-05-29T09:54:00.165231Z DEBUG: slow gRPC call
+2026-05-29T09:54:00.165258Z DEBUG: close
+2026-05-29T09:54:00.166173Z DEBUG: new
+2026-05-29T09:54:00.892243Z INFO: [Phase3] Assigned worker WorkerId(node1) as aggregator for job JobId(9f1ef5a3…)
+2026-05-29T09:54:00.892259Z INFO: [Phase2] WorkerId(node1) finished phase 2 for JobId(9f1ef5a3…) (1 / 4 workers done, 3.630s)
+2026-05-29T09:54:00.901303Z INFO: Worker WorkerId(node4) Ready (total: 4 CC: 40CU ACC: 10CU)
+2026-05-29T09:54:00.901308Z INFO: [Phase2] WorkerId(node4) finished phase 2 for JobId(9f1ef5a3…) (2 / 4 workers done, 3.639s)
+2026-05-29T09:54:00.971914Z INFO: Worker WorkerId(node2) Ready (total: 4 CC: 40CU ACC: 20CU)
+2026-05-29T09:54:00.971921Z INFO: [Phase2] WorkerId(node2) finished phase 2 for JobId(9f1ef5a3…) (3 / 4 workers done, 3.710s)
+2026-05-29T09:54:00.975310Z INFO: Worker WorkerId(node3) Ready (total: 4 CC: 40CU ACC: 30CU)
+2026-05-29T09:54:00.975312Z INFO: [Phase2] WorkerId(node3) finished phase 2 for JobId(9f1ef5a3…) (4 / 4 workers done, 3.713s)
+2026-05-29T09:54:01.368585Z INFO: Worker WorkerId(node1) Ready (total: 4 CC: 40CU ACC: 40CU)
+2026-05-29T09:54:01.368693Z INFO: [Phase3] WorkerId WorkerId(node1) done, phase 3 completed for JobId(9f1ef5a3…) (0.393s)
+2026-05-29T09:54:01.368700Z INFO: [Job] Finished JobId(9f1ef5a3…) successfully ✔ Duration: 6.254s (2.148s+3.714s+0.393s) Steps: 329.288.813 Instances: 190 Capacity: 40CU
+2026-05-29T09:54:01.368706Z INFO: [Job] Contributions Performance for JobId(9f1ef5a3…) - Avg: 2.102s, Best: WorkerId(node1) (2.006s), Worst: WorkerId(node4) (2.147s), Diff: 7.0%
+2026-05-29T09:54:01.368710Z INFO: [Job] Contributions Delay for JobId(9f1ef5a3…) - Avg: 0.057s, Best: WorkerId(node1) (0.054s), Worst: WorkerId(node4) (0.060s), Diff: 11.1%
+2026-05-29T09:54:01.368712Z INFO: [Job] Contributions Witness for JobId(9f1ef5a3…) - Avg: 1.274s, Best: WorkerId(node1) (1.182s), Worst: WorkerId(node3) (1.322s), Diff: 11.8%
+2026-05-29T09:54:01.368715Z INFO: [Job] Contributions ASM for JobId(9f1ef5a3…) - Avg: 0.752s, Best: WorkerId(node3) (0.731s @ 450.6MHz), Worst: WorkerId(node4) (0.777s @ 423.7MHz), Diff: 6.3%
+2026-05-29T09:54:01.368719Z INFO: [Job] Prove Performance for JobId(9f1ef5a3…) - Avg: 3.673s, Best: WorkerId(node1) (3.630s), Worst: WorkerId(node3) (3.713s), Diff: 2.3%
+2026-05-29T09:54:01.368722Z INFO: [Coordinator] Started at 2026-05-29 09:51:19 UTC — Uptime: 2m 41s
+2026-05-29T09:54:01.368727Z INFO: [Coordinator] Registrations: 4 Reconnections: 0
+2026-05-29T09:54:01.386547Z DEBUG: gRPC call OK
+2026-05-29T09:54:01.386553Z DEBUG: close
+2026-05-29T09:54:01.419784Z DEBUG: new
+2026-05-29T09:54:01.439340Z INFO: [Job] Started JobId(c58b5f39…) successfully Capacity: 40CU Workers: 4
+2026-05-29T09:54:01.485065Z INFO: Job JobId(c58b5f39…) using inline input data (7935528 bytes)
+2026-05-29T09:54:01.489352Z INFO: [Phase1] Started with 4 workers for JobId(c58b5f39…)
+2026-05-29T09:54:01.489374Z DEBUG: gRPC call OK
+2026-05-29T09:54:01.489382Z DEBUG: close
+2026-05-29T09:54:01.490014Z DEBUG: new
+2026-05-29T09:54:03.312639Z INFO: [Phase1] WorkerId(node3) finished phase 1 for JobId(c58b5f39…) (1/4 workers done, Phase: 1.873s, Delay: 0.058s, Witness: 1.256s, Asm Execution: 0.541s at 555.27905 MHz)
+2026-05-29T09:54:03.355991Z INFO: [Phase1] WorkerId(node2) finished phase 1 for JobId(c58b5f39…) (2/4 workers done, Phase: 1.916s, Delay: 0.057s, Witness: 1.271s, Asm Execution: 0.569s at 528.2655 MHz)
+2026-05-29T09:54:03.431990Z INFO: [Phase1] WorkerId(node4) finished phase 1 for JobId(c58b5f39…) (3/4 workers done, Phase: 1.992s, Delay: 0.057s, Witness: 1.355s, Asm Execution: 0.562s at 534.7389 MHz)
+2026-05-29T09:54:03.471576Z INFO: [Phase1] WorkerId(node1) finished phase 1 for JobId(c58b5f39…) (4/4 workers done, Phase: 2.032s, Delay: 0.055s, Witness: 1.399s, Asm Execution: 0.558s at 538.5203 MHz)
+2026-05-29T09:54:03.471590Z INFO: Execution Summary: 
+2026-05-29T09:54:03.471623Z INFO: [Phase2] Started with 4 workers for JobId(c58b5f39…)
+2026-05-29T09:54:06.490881Z DEBUG: gRPC call OK
+2026-05-29T09:54:06.490903Z DEBUG: close
+2026-05-29T09:54:06.491595Z DEBUG: new
+2026-05-29T09:54:06.656735Z INFO: [Phase3] Assigned worker WorkerId(node4) as aggregator for job JobId(c58b5f39…)
+2026-05-29T09:54:06.656751Z INFO: [Phase2] WorkerId(node4) finished phase 2 for JobId(c58b5f39…) (1 / 4 workers done, 3.185s)
+2026-05-29T09:54:06.743165Z INFO: Worker WorkerId(node2) Ready (total: 4 CC: 40CU ACC: 10CU)
+2026-05-29T09:54:06.743188Z INFO: [Phase2] WorkerId(node2) finished phase 2 for JobId(c58b5f39…) (2 / 4 workers done, 3.271s)
+2026-05-29T09:54:06.750384Z INFO: Worker WorkerId(node3) Ready (total: 4 CC: 40CU ACC: 20CU)
+2026-05-29T09:54:06.750404Z INFO: [Phase2] WorkerId(node3) finished phase 2 for JobId(c58b5f39…) (3 / 4 workers done, 3.278s)
+2026-05-29T09:54:07.283191Z INFO: Worker WorkerId(node1) Ready (total: 4 CC: 40CU ACC: 30CU)
+2026-05-29T09:54:07.283207Z INFO: [Phase2] WorkerId(node1) finished phase 2 for JobId(c58b5f39…) (4 / 4 workers done, 3.811s)
+2026-05-29T09:54:07.588304Z INFO: Worker WorkerId(node4) Ready (total: 4 CC: 40CU ACC: 40CU)
+2026-05-29T09:54:07.588424Z INFO: [Phase3] WorkerId WorkerId(node4) done, phase 3 completed for JobId(c58b5f39…) (0.305s)
+2026-05-29T09:54:07.588434Z INFO: [Job] Finished JobId(c58b5f39…) successfully ✔ Duration: 6.149s (2.032s+3.812s+0.305s) Steps: 300.610.558 Instances: 169 Capacity: 40CU
+2026-05-29T09:54:07.588442Z INFO: [Job] Contributions Performance for JobId(c58b5f39…) - Avg: 1.953s, Best: WorkerId(node3) (1.873s), Worst: WorkerId(node1) (2.032s), Diff: 8.5%
+2026-05-29T09:54:07.588449Z INFO: [Job] Contributions Delay for JobId(c58b5f39…) - Avg: 0.057s, Best: WorkerId(node1) (0.055s), Worst: WorkerId(node3) (0.058s), Diff: 5.5%
+2026-05-29T09:54:07.588456Z INFO: [Job] Contributions Witness for JobId(c58b5f39…) - Avg: 1.320s, Best: WorkerId(node3) (1.256s), Worst: WorkerId(node1) (1.399s), Diff: 11.4%
+2026-05-29T09:54:07.588464Z INFO: [Job] Contributions ASM for JobId(c58b5f39…) - Avg: 0.558s, Best: WorkerId(node3) (0.541s @ 555.3MHz), Worst: WorkerId(node2) (0.569s @ 528.3MHz), Diff: 5.1%
+2026-05-29T09:54:07.588469Z INFO: [Job] Prove Performance for JobId(c58b5f39…) - Avg: 3.386s, Best: WorkerId(node4) (3.185s), Worst: WorkerId(node1) (3.811s), Diff: 19.7%
+2026-05-29T09:54:07.588476Z INFO: [Coordinator] Started at 2026-05-29 09:51:19 UTC — Uptime: 2m 47s
+2026-05-29T09:54:07.588486Z INFO: [Coordinator] Registrations: 4 Reconnections: 0
+2026-05-29T09:54:07.610550Z DEBUG: gRPC call OK
+2026-05-29T09:54:07.610555Z DEBUG: close
+2026-05-29T09:54:07.625449Z DEBUG: new
+2026-05-29T09:54:07.633479Z INFO: [Job] Started JobId(5cf30ede…) successfully Capacity: 40CU Workers: 4
+2026-05-29T09:54:07.650658Z INFO: Job JobId(5cf30ede…) using inline input data (2992904 bytes)
+2026-05-29T09:54:07.652302Z INFO: [Phase1] Started with 4 workers for JobId(5cf30ede…)
+2026-05-29T09:54:07.652314Z DEBUG: gRPC call OK
+2026-05-29T09:54:07.652320Z DEBUG: close
+2026-05-29T09:54:07.652920Z DEBUG: new
+2026-05-29T09:54:08.583040Z INFO: [Phase1] WorkerId(node2) finished phase 1 for JobId(5cf30ede…) (1/4 workers done, Phase: 0.949s, Delay: 0.022s, Witness: 0.594s, Asm Execution: 0.316s at 458.40247 MHz)
+2026-05-29T09:54:08.616022Z INFO: [Phase1] WorkerId(node1) finished phase 1 for JobId(5cf30ede…) (2/4 workers done, Phase: 0.982s, Delay: 0.020s, Witness: 0.630s, Asm Execution: 0.316s at 458.1312 MHz)
+2026-05-29T09:54:08.636278Z INFO: [Phase1] WorkerId(node4) finished phase 1 for JobId(5cf30ede…) (3/4 workers done, Phase: 1.002s, Delay: 0.022s, Witness: 0.656s, Asm Execution: 0.309s at 468.4039 MHz)
+2026-05-29T09:54:08.704440Z INFO: [Phase1] WorkerId(node3) finished phase 1 for JobId(5cf30ede…) (4/4 workers done, Phase: 1.070s, Delay: 0.022s, Witness: 0.723s, Asm Execution: 0.309s at 468.19366 MHz)
+2026-05-29T09:54:08.704446Z INFO: Execution Summary: 
+2026-05-29T09:54:08.704485Z INFO: [Phase2] Started with 4 workers for JobId(5cf30ede…)
+2026-05-29T09:54:10.904274Z INFO: [Phase3] Assigned worker WorkerId(node2) as aggregator for job JobId(5cf30ede…)
+2026-05-29T09:54:10.904289Z INFO: [Phase2] WorkerId(node2) finished phase 2 for JobId(5cf30ede…) (1 / 4 workers done, 2.199s)
+2026-05-29T09:54:10.918394Z INFO: Worker WorkerId(node1) Ready (total: 4 CC: 40CU ACC: 10CU)
+2026-05-29T09:54:10.918398Z INFO: [Phase2] WorkerId(node1) finished phase 2 for JobId(5cf30ede…) (2 / 4 workers done, 2.213s)
+2026-05-29T09:54:11.005003Z INFO: Worker WorkerId(node4) Ready (total: 4 CC: 40CU ACC: 20CU)
+2026-05-29T09:54:11.005014Z INFO: [Phase2] WorkerId(node4) finished phase 2 for JobId(5cf30ede…) (3 / 4 workers done, 2.300s)
+2026-05-29T09:54:11.010787Z INFO: Worker WorkerId(node3) Ready (total: 4 CC: 40CU ACC: 30CU)
+2026-05-29T09:54:11.010791Z INFO: [Phase2] WorkerId(node3) finished phase 2 for JobId(5cf30ede…) (4 / 4 workers done, 2.306s)
+2026-05-29T09:54:11.437313Z INFO: Worker WorkerId(node2) Ready (total: 4 CC: 40CU ACC: 40CU)
+2026-05-29T09:54:11.437477Z INFO: [Phase3] WorkerId WorkerId(node2) done, phase 3 completed for JobId(5cf30ede…) (0.427s)
+2026-05-29T09:54:11.437488Z INFO: [Job] Finished JobId(5cf30ede…) successfully ✔ Duration: 3.803s (1.071s+2.306s+0.427s) Steps: 144.812.879 Instances: 89 Capacity: 40CU
+2026-05-29T09:54:11.437495Z INFO: [Job] Contributions Performance for JobId(5cf30ede…) - Avg: 1.001s, Best: WorkerId(node2) (0.949s), Worst: WorkerId(node3) (1.070s), Diff: 12.8%
+2026-05-29T09:54:11.437500Z INFO: [Job] Contributions Delay for JobId(5cf30ede…) - Avg: 0.021s, Best: WorkerId(node1) (0.020s), Worst: WorkerId(node3) (0.022s), Diff: 10.0%
+2026-05-29T09:54:11.437507Z INFO: [Job] Contributions Witness for JobId(5cf30ede…) - Avg: 0.651s, Best: WorkerId(node2) (0.594s), Worst: WorkerId(node3) (0.723s), Diff: 21.7%
+2026-05-29T09:54:11.437510Z INFO: [Job] Contributions ASM for JobId(5cf30ede…) - Avg: 0.313s, Best: WorkerId(node4) (0.309s @ 468.4MHz), Worst: WorkerId(node1) (0.316s @ 458.1MHz), Diff: 2.2%
+2026-05-29T09:54:11.437515Z INFO: [Job] Prove Performance for JobId(5cf30ede…) - Avg: 2.255s, Best: WorkerId(node2) (2.199s), Worst: WorkerId(node3) (2.306s), Diff: 4.9%
+2026-05-29T09:54:11.437521Z INFO: [Coordinator] Started at 2026-05-29 09:51:19 UTC — Uptime: 2m 51s
+2026-05-29T09:54:11.437529Z INFO: [Coordinator] Registrations: 4 Reconnections: 0
+2026-05-29T09:54:11.455889Z DEBUG: gRPC call OK
+2026-05-29T09:54:11.455896Z DEBUG: close
+2026-05-29T09:54:57.677904Z INFO: Disconnected worker: WorkerId(node1) (total: 3 CC: 30CU ACC: 30CU)
+2026-05-29T09:55:01.723346Z INFO: Disconnected worker: WorkerId(node4) (total: 2 CC: 20CU ACC: 20CU)
+2026-05-29T09:55:01.924635Z INFO: Disconnected worker: WorkerId(node3) (total: 1 CC: 10CU ACC: 10CU)
+2026-05-29T09:55:01.965713Z INFO: Disconnected worker: WorkerId(node2) (total: 0 CC: 0CU ACC: 0CU)
+2026-05-29T09:55:09.254681Z INFO: received SIGTERM — initiating graceful shutdown
+2026-05-29T09:55:09.254721Z INFO: shutdown signal received — draining in-flight requests
+2026-05-29T09:55:09.254754Z INFO: zisk-coordinator stopped gracefully

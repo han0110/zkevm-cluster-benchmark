@@ -1,0 +1,183 @@
+/*
+ * Theme entry point. A two-tier token mechanism keeps CSS variables as the single source of truth, read
+ * at runtime by useThemeColors and dataVizColors via getComputedStyle and culori, over a warm-tinted
+ * single dark theme. The block uses `@theme static` so Tailwind v4 emits every token as a custom
+ * property on root even when no utility class references it. Phase role colors are read through a
+ * runtime-built var(--color-phase-N) name the content scanner never sees as literal text, so under the
+ * default tree-shaking they would be dropped and every chart fill would fall back to the foreground.
+ */
+
+@import '@fontsource-variable/space-grotesk';
+@import 'tailwindcss';
+
+@theme static {
+  /* Tier 1 warm-tinted dark surfaces. */
+  --color-warm-base: #1a1410;
+  --color-warm-surface: #241c15;
+  --color-warm-elevated: #30251b;
+  --color-warm-border: #3f3327;
+  --color-text-primary: #f2e8da;
+  --color-text-secondary: #bba890;
+  --color-text-muted: #8a7a64;
+
+  /*
+   * Tier 1 categorical palette (8). The hue order keeps adjacent series separated (pumpkin to amber to
+   * maple jumps across orange, gold, and red). Wheat is the lowest-saturation neutral, reserved for
+   * baseline series. Maple and plum sit close to the base so they are avoided for thin strokes.
+   */
+  --color-cat-1: #e8743b; /* pumpkin */
+  --color-cat-2: #ebb13e; /* golden amber */
+  --color-cat-3: #c8434c; /* maple red */
+  --color-cat-4: #b0673a; /* burnt copper */
+  --color-cat-5: #9da94f; /* olive moss */
+  --color-cat-6: #4fa088; /* pine teal */
+  --color-cat-7: #9c5e8e; /* plum */
+  --color-cat-8: #d9c18a; /* wheat tan */
+
+  /* Tier 2 semantic surface and brand tokens. */
+  --color-background: var(--color-warm-base);
+  --color-surface: var(--color-warm-surface);
+  --color-elevated: var(--color-warm-elevated);
+  --color-foreground: var(--color-text-primary);
+  --color-muted: var(--color-text-secondary);
+  --color-faint: var(--color-text-muted);
+  --color-border: var(--color-warm-border);
+  --color-primary: var(--color-cat-1);
+  --color-accent: var(--color-cat-6);
+  --color-success: var(--color-cat-5);
+  --color-warning: var(--color-cat-2);
+  --color-danger: var(--color-cat-3);
+
+  /*
+   * Trace marker colors for a node that ended early. Crash is the maple red the prove phase no longer
+   * uses, the alarming color for the failed node, and cancel is the faint neutral because a cancellation
+   * in a crash's wake is incidental and reads quieter.
+   */
+  --color-crash: var(--color-cat-3);
+  --color-cancel: var(--color-faint);
+
+  /*
+   * Data-viz phase fill palette. A per-zkVM preset in utils/phases.ts maps each phase name to one of
+   * these, and a phase without a preset entry falls back by position so a new cluster still renders
+   * distinct fills. These are fills where the lower-contrast cats are acceptable, the node palette is
+   * reserved for thin telemetry strokes.
+   */
+  --color-phase-1: var(--color-cat-4);
+  --color-phase-2: var(--color-cat-6);
+  --color-phase-3: var(--color-cat-7);
+  --color-phase-4: var(--color-cat-8);
+  --color-phase-5: var(--color-cat-6);
+  --color-phase-6: var(--color-cat-2);
+
+  /* Neutral fill a preset assigns to a waiting or unimportant phase so it reads as filler. */
+  --color-phase-muted: #6f6253;
+
+  /* Data-viz per-node colors (node1..node4), drawn from the vivid, thin-stroke-safe cats. */
+  --color-node-1: var(--color-cat-1);
+  --color-node-2: var(--color-cat-6);
+  --color-node-3: var(--color-cat-2);
+  --color-node-4: var(--color-cat-5);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body {
+    background-color: var(--color-background);
+  }
+
+  body {
+    margin: 0;
+    color: var(--color-foreground);
+    font-family: 'Space Grotesk Variable', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  /* Host layer for chart tooltips that must overflow a short panel to stay unclipped. Fixed to the
+     viewport and clips its own overflow, so a tooltip ECharts leaves positioned far down the page while
+     hidden can never grow the document or scroll the fixed app shell out of view. Pointer events pass
+     through so the layer never intercepts the content beneath it. */
+  #chart-tooltip-layer {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Tailwind v4 Preflight leaves controls on the default arrow, so one rule makes every enabled button
+     and option read as clickable rather than a cursor class repeated across components. */
+  button:not(:disabled),
+  select:not(:disabled),
+  [role='option'] {
+    cursor: pointer;
+  }
+
+  /* Slim warm scrollbars for the scrollable lists. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) transparent;
+  }
+}
+
+@layer components {
+  /*
+   * Dual range slider input. Two overlay the same track to form a min and max pair. Sibling divs draw
+   * the track and selected fill so the native track stays transparent and only the round thumb shows.
+   * The input ignores pointer events while its thumb keeps them, so the thumb under the cursor drags
+   * even where the two inputs overlap.
+   */
+  .range-slider {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    background: transparent;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .range-slider:focus-visible {
+    outline: none;
+  }
+  .range-slider::-webkit-slider-runnable-track {
+    background: transparent;
+  }
+  .range-slider::-moz-range-track {
+    background: transparent;
+  }
+  .range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    pointer-events: auto;
+    height: 0.875rem;
+    width: 0.875rem;
+    border-radius: 9999px;
+    background: var(--color-primary);
+    border: 2px solid var(--color-surface);
+    cursor: pointer;
+  }
+  .range-slider::-moz-range-thumb {
+    pointer-events: auto;
+    height: 0.875rem;
+    width: 0.875rem;
+    border-radius: 9999px;
+    background: var(--color-primary);
+    border: 2px solid var(--color-surface);
+    cursor: pointer;
+  }
+  .range-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 2px var(--color-primary);
+  }
+  .range-slider:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 2px var(--color-primary);
+  }
+}

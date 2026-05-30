@@ -1,0 +1,170 @@
+//! Output schema structs serialized into benchmark.json.
+//!
+//! The benchmark holds the cluster identity once and a list of runs, each carrying its own
+//! statistics, blocks, and telemetry, so repeated runs accumulate in one document. Time is integer
+//! milliseconds offset from the run epoch, and telemetry is columnar on an implicit one-second axis.
+//!
+//! The structs round-trip through JSON so a patch can read, append a run, and write back, which is
+//! why every struct derives Deserialize and the cluster-identity subtree also derives PartialEq for
+//! the patch's same-cluster guard. Serde field order is wire order.
+
+use std::collections::BTreeMap;
+
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+
+/// The complete benchmark document written to benchmark.json. `id` is the identity shared by every
+/// run, and `runs` holds one entry per execution. Hardware and software are held once because a
+/// patch only appends a run when they match the existing document.
+#[derive(Serialize, Deserialize)]
+pub struct Benchmark {
+    pub schema_version: u32,
+    pub hardware: Hardware,
+    pub software: Software,
+    pub id: String,
+    pub runs: Vec<Run>,
+}
+
+/// Node hardware assumed identical across the cluster, with the node ids in order.
+#[derive(Serialize, Deserialize, PartialEq)]
+pub struct Hardware {
+    pub cpu_model: Option<String>,
+    pub ram_gib: Option<u64>,
+    pub gpu_models: Vec<String>,
+    pub nodes: Vec<String>,
+}
+
+/// The proving software identity, the zkVM and the guest program.
+#[derive(Serialize, Deserialize, PartialEq)]
+pub struct Software {
+    pub zkvm: Zkvm,
+    pub guest: Guest,
+}
+
+/// The zkVM that produced the proofs, carrying its ordered phase preset.
+#[derive(Serialize, Deserialize, PartialEq)]
+pub struct Zkvm {
+    pub name: String,
+    pub version: String,
+    pub phases: Vec<Phase>,
+}
+
+/// The guest program that was proven.
+#[derive(Serialize, Deserialize, PartialEq)]
+pub struct Guest {
+    pub name: String,
+    pub version: String,
+}
+
+/// One phase of the proving pipeline, rendered in array order and colored by position.
+#[derive(Serialize, Deserialize, PartialEq)]
+pub struct Phase {
+    pub name: String,
+    pub label: String,
+}
+
+/// One execution of the benchmark with its own statistics, blocks, and telemetry. The block,
+/// success, and failure counts let the consumer skip recomputation.
+#[derive(Serialize, Deserialize)]
+pub struct Run {
+    pub id: String,
+    /// First job start as unix epoch milliseconds.
+    pub started_at: i64,
+    pub block_count: usize,
+    pub success_count: usize,
+    pub failure_count: usize,
+    pub statistics: Statistics,
+    pub blocks: Vec<Block>,
+    pub telemetry: Telemetry,
+}
+
+/// Cluster proving statistics and the per-node GPU rollups indexed to hardware.nodes.
+#[derive(Serialize, Deserialize)]
+pub struct Statistics {
+    pub mean_proving_ms: Option<i64>,
+    pub p50_proving_ms: Option<i64>,
+    pub p90_proving_ms: Option<i64>,
+    pub p95_proving_ms: Option<i64>,
+    pub p99_proving_ms: Option<i64>,
+    pub mean_gas_per_s: Option<i64>,
+    pub nodes: Vec<NodeStats>,
+}
+
+/// Proving-window GPU rollup for one node, positioned to match hardware.nodes, null where absent. It
+/// aggregates only telemetry sampled inside a clean block's proving window, so idle time and
+/// degraded or aborted jobs do not pull it off the normal proving load.
+#[derive(Serialize, Deserialize)]
+pub struct NodeStats {
+    pub max_temp: Option<f64>,
+    pub temp_throttle_seconds: f64,
+    pub mean_sm: Option<f64>,
+    pub mean_mem: Option<f64>,
+    pub peak_rxpci: Option<f64>,
+    pub peak_txpci: Option<f64>,
+}
+
+/// A phase window relative to its block start, expressed as offset and duration.
+#[derive(Serialize, Deserialize, Clone)]
+pub struct PhaseWindow {
+    pub start_ms: i64,
+    pub dur_ms: i64,
+}
+
+/// One node's contribution to a block, positioned to match hardware.nodes. Phase windows align to
+/// the preset order, and the final aggregate window is non-null only on the aggregator, which is how
+/// it is identified. On a crashed block `crashed_ms` is the block-start offset at which this node
+/// was blamed, with later phases null, and it is null on every node of a clean block.
+#[derive(Serialize, Deserialize)]
+pub struct BlockNode {
+    pub phases: Vec<Option<PhaseWindow>>,
+    pub crashed_ms: Option<i64>,
+    /// How this node ended on a crashed block, "crashed" for the lost node or "cancelled" for a
+    /// sibling-stopped one. Null when the node has no crash marker.
+    pub crash_kind: Option<String>,
+    /// Whether this node took part in the block. False marks a node the proof ran without, so its
+    /// figures are not comparable to a full-cluster run.
+    pub participated: bool,
+}
+
+/// A single proven block, emitted in completion order and identified by its metric file name.
+#[derive(Serialize, Deserialize)]
+pub struct Block {
+    pub id: String,
+    pub status: String,
+    /// Block start offset from the run epoch in milliseconds.
+    pub start_ms: i64,
+    pub gas_used: Option<u64>,
+    /// Authoritative wall-clock proving time from the metric file, null unless the proof succeeded.
+    pub proving_ms: Option<i64>,
+    pub proof_size: Option<u64>,
+    pub verification_time_ms: Option<u64>,
+    /// zkVM-specific per-block scalars keyed by field name, such as input_size and steps for zisk.
+    pub meta: BTreeMap<String, Value>,
+    pub nodes: Vec<BlockNode>,
+}
+
+/// Display metadata for one telemetry metric, driving frontend panels.
+#[derive(Serialize, Deserialize)]
+pub struct Metric {
+    pub name: String,
+    pub label: String,
+    pub unit: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max: Option<f64>,
+}
+
+/// One node's telemetry as per-metric [gpu][tick] arrays on the shared one-second axis. Tick i is i
+/// seconds after the run epoch, the same axis for every node, so nodes align by index.
+#[derive(Serialize, Deserialize)]
+pub struct NodeTelemetry {
+    /// Metric name to a [gpu][tick] grid. A cell is null where a gpu lacked a reading or the node
+    /// did not sample that second. Empty metrics are omitted.
+    pub metrics: BTreeMap<String, Vec<Vec<Value>>>,
+}
+
+/// All node telemetry plus the catalog of metrics present in the run.
+#[derive(Serialize, Deserialize)]
+pub struct Telemetry {
+    pub metrics: Vec<Metric>,
+    pub nodes: Vec<NodeTelemetry>,
+}
