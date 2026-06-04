@@ -73,7 +73,7 @@ export function useColumnSizing(
     try {
       localStorage.setItem(storageKey, JSON.stringify(overrides));
     } catch {
-      // Storage unavailable; the widths still apply for the session.
+      // Storage unavailable, the widths still apply for the session.
     }
   }, [storageKey, overrides]);
 

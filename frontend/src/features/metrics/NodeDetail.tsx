@@ -7,8 +7,8 @@
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { DetailPanel } from '@/components/common/DetailPanel';
-import { ChartCard } from '@/components/common/ChartCard';
-import { ChartSection } from '@/components/common/ChartSection';
+import { ChartPanel } from '@/components/common/ChartPanel';
+import { SectionHeading } from '@/components/common/SectionHeading';
 import { StatStrip, type StatItem } from '@/components/common/StatStrip';
 import { PhaseTimingChart } from '@/components/charts/PhaseTimingChart';
 import { GpuTelemetry } from '@/components/charts/GpuTelemetry';
@@ -166,26 +166,28 @@ export function NodeDetail({ run, node, onClose }: { run: Run; node: string; onC
     <DetailPanel onClose={onClose} closeLabel="Close node detail">
       {stats && <StatStrip items={gpuKpis(stats)} />}
 
-      <ChartSection
+      {/* Same titled-panel presentation as the Overview "Phase breakdown per block", without the sort
+          toggle, so the two read as one design rather than two near-identical styles. */}
+      <ChartPanel
         title="Phase breakdown per block"
         subtitle="Each phase is this node's own time. Total is the whole proof, which runs longer while the node idles waiting for aggregation."
       >
-        <ChartCard>
-          <PhaseTimingChart
-            labels={phase.labels}
-            values={phase.values}
-            registry={registry}
-            total={phase.total}
-            getZoom={getPhaseZoom}
-            onZoom={onPhaseZoom}
-            onHoverBlock={onHoverBlock}
-            minValueSpan={2}
-            onReady={inst => (phaseChart.current = inst)}
-          />
-        </ChartCard>
-      </ChartSection>
+        <PhaseTimingChart
+          labels={phase.labels}
+          values={phase.values}
+          registry={registry}
+          total={phase.total}
+          getZoom={getPhaseZoom}
+          onZoom={onPhaseZoom}
+          onHoverBlock={onHoverBlock}
+          minValueSpan={2}
+          onReady={inst => (phaseChart.current = inst)}
+        />
+      </ChartPanel>
 
-      <ChartSection title="GPU telemetry">
+      {/* GPU telemetry is a group of per-metric panels under one heading and a shared legend. */}
+      <section className="flex flex-col gap-4">
+        <SectionHeading>GPU telemetry</SectionHeading>
         <GpuTelemetry
           telemetry={telemetryById}
           metricDefs={run.telemetry.metrics}
@@ -199,7 +201,7 @@ export function NodeDetail({ run, node, onClose }: { run: Run; node: string; onC
           registerHighlight={registerHighlight}
           group={`gpu-${node}`}
         />
-      </ChartSection>
+      </section>
     </DetailPanel>
   );
 }

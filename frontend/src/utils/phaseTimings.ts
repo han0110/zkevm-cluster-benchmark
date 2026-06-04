@@ -32,6 +32,12 @@ export const windowSeconds = (win: PhaseWindow | null): { start: number; end: nu
 // Seconds-since-block-start of the end of a window, or null when the window is absent.
 const endSec = (win: PhaseWindow | null): number | null => windowSeconds(win)?.end ?? null;
 
+// Whether a block has anything to plot on its trace, a phase window on some node or a crash marker. A
+// block that ended before any node reported progress has neither, so it carries no timeline.
+export function hasTimeline(block: Block): boolean {
+  return block.nodes.some(node => node.crashed_ms != null || node.phases.some(p => p != null));
+}
+
 // Per-block phase durations for one node from its own phase windows. The aggregate phase is non-zero
 // only on the blocks the node aggregated.
 export function nodePhaseSeries(blocks: Block[], nodeIndex: number, registry: PhaseRegistry): PhaseSeries {

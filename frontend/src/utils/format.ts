@@ -25,9 +25,10 @@ export const formatMsSeconds = (ms: number | null | undefined, digits = 2): stri
 export const formatMiBps = (v: number): string =>
   v >= 1024 ? `${(v / 1024).toFixed(1)} GiB/s` : `${v.toFixed(0)} MiB/s`;
 
-// Bytes into the largest sensible binary unit.
+// Bytes into the largest sensible binary unit, labelled with the IEC binary prefixes since the steps
+// are powers of 1024.
 export function formatBytes(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB'];
+  const units = ['B', 'KiB', 'MiB', 'GiB'];
   let value = bytes;
   let unit = 0;
   while (value >= 1024 && unit < units.length - 1) {
@@ -40,6 +41,14 @@ export function formatBytes(bytes: number): string {
 // Convert integer ms to seconds, the shared conversion charts use to place ms-offset windows and
 // telemetry ticks on a seconds-since-start axis.
 export const msToSec = (ms: number): number => ms / 1000;
+
+// Microseconds as a fixed-precision seconds string, defaulting to three decimals.
+export const formatMicros = (micros: number, digits?: number): string =>
+  (micros / 1_000_000).toFixed(digits ?? 3);
+
+// Convert microseconds to seconds, the shared conversion microsecond telemetry uses to reach a
+// seconds-since-start axis.
+export const microsToSeconds = (micros: number): number => micros / 1_000_000;
 
 // Axis label for a seconds-since-reference value. Always carries the second unit so a long run never
 // reads as a wall clock, the comparison the seconds-since-origin axis exists to avoid.

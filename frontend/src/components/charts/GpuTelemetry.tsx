@@ -1,5 +1,5 @@
 /*
- * GPU telemetry stack for Proofs and Metrics. One line chart per metric under one elevated legend.
+ * GPU telemetry stack for Blocks and Metrics. One line chart per metric under one elevated legend.
  * Multi-node draws all GPUs with hue=node and dash=GPU and a Node x GPU legend, single-node gives each
  * GPU its own hue. Uncaptured metrics are omitted, charts share a connect group so hover and zoom sync,
  * and a single selected node overlays its proving phases as bands. Telemetry is columnar.
@@ -47,9 +47,9 @@ interface GpuTelemetryProps {
 const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
 const gpuCountOf = (node: NodeTelemetry | undefined): number => (node ? gpuCount(node) : 0);
 
-// Reserved height for an unmounted metric panel (chart plus title and padding) so virtualization
-// leaves the scroll position unchanged while offscreen.
-const LAZY_RESERVE = 214;
+// Reserved height for an unmounted metric panel (chart plus the panel header, divider, and padding) so
+// virtualization leaves the scroll position unchanged while offscreen.
+const LAZY_RESERVE = 256;
 
 export function GpuTelemetry({
   telemetry,

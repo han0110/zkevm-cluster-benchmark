@@ -1,5 +1,5 @@
 /*
- * Shared right-pane shell for the Proofs and Metrics detail views, a scrolling column led by an Overview
+ * Shared right-pane shell for the Blocks and Metrics detail views, a scrolling column led by an Overview
  * heading with an optional status badge and a close control, then the view's own sections. The bodies
  * differ per view so only this chrome is shared.
  */

@@ -2,7 +2,8 @@
 //!
 //! The benchmark holds the cluster identity once and a list of runs, each carrying its own
 //! statistics, blocks, and telemetry, so repeated runs accumulate in one document. Time is integer
-//! milliseconds offset from the run epoch, and telemetry is columnar on an implicit one-second axis.
+//! milliseconds offset from the run epoch, and telemetry is columnar on an implicit one-second
+//! axis.
 //!
 //! The structs round-trip through JSON so a patch can read, append a run, and write back, which is
 //! why every struct derives Deserialize and the cluster-identity subtree also derives PartialEq for
@@ -14,14 +15,18 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// The complete benchmark document written to benchmark.json. `id` is the identity shared by every
-/// run, and `runs` holds one entry per execution. Hardware and software are held once because a
-/// patch only appends a run when they match the existing document.
+/// run, derived from the run directory basename, while `name` and `description` are the
+/// human-facing identity read from the run directory's input benchmark.json. `runs` holds one entry
+/// per execution. Hardware and software are held once because a patch only appends a run when they,
+/// and the name, match the existing document.
 #[derive(Serialize, Deserialize)]
 pub struct Benchmark {
     pub schema_version: u32,
     pub hardware: Hardware,
     pub software: Software,
     pub id: String,
+    pub name: String,
+    pub description: String,
     pub runs: Vec<Run>,
 }
 
@@ -90,8 +95,8 @@ pub struct Statistics {
     pub nodes: Vec<NodeStats>,
 }
 
-/// Proving-window GPU rollup for one node, positioned to match hardware.nodes, null where absent. It
-/// aggregates only telemetry sampled inside a clean block's proving window, so idle time and
+/// Proving-window GPU rollup for one node, positioned to match hardware.nodes, null where absent.
+/// It aggregates only telemetry sampled inside a clean block's proving window, so idle time and
 /// degraded or aborted jobs do not pull it off the normal proving load.
 #[derive(Serialize, Deserialize)]
 pub struct NodeStats {
@@ -111,9 +116,9 @@ pub struct PhaseWindow {
 }
 
 /// One node's contribution to a block, positioned to match hardware.nodes. Phase windows align to
-/// the preset order, and the final aggregate window is non-null only on the aggregator, which is how
-/// it is identified. On a crashed block `crashed_ms` is the block-start offset at which this node
-/// was blamed, with later phases null, and it is null on every node of a clean block.
+/// the preset order, and the final aggregate window is non-null only on the aggregator, which is
+/// how it is identified. On a crashed block `crashed_ms` is the block-start offset at which this
+/// node was blamed, with later phases null, and it is null on every node of a clean block.
 #[derive(Serialize, Deserialize)]
 pub struct BlockNode {
     pub phases: Vec<Option<PhaseWindow>>,
@@ -126,21 +131,40 @@ pub struct BlockNode {
     pub participated: bool,
 }
 
-/// A single proven block, emitted in completion order and identified by its metric file name.
+/// A single proven block, emitted in completion order. `name` is its metric file name, unique
+/// within the run and the identifier the views key on.
 #[derive(Serialize, Deserialize)]
 pub struct Block {
-    pub id: String,
+    pub name: String,
     pub status: String,
     /// Block start offset from the run epoch in milliseconds.
     pub start_ms: i64,
     pub gas_used: Option<u64>,
-    /// Authoritative wall-clock proving time from the metric file, null unless the proof succeeded.
+    /// Authoritative wall-clock proving time from the metric file, null unless the proof
+    /// succeeded.
     pub proving_ms: Option<i64>,
     pub proof_size: Option<u64>,
     pub verification_time_ms: Option<u64>,
     /// zkVM-specific per-block scalars keyed by field name, such as input_size and steps for zisk.
     pub meta: BTreeMap<String, Value>,
     pub nodes: Vec<BlockNode>,
+    /// The coordinator and worker log lines within this block's proving window, in time order,
+    /// every level including DEBUG and TRACE. Skipped from benchmark.json and written to a sibling
+    /// per-block log file instead.
+    #[serde(skip)]
+    pub logs: Vec<LogEntry>,
+}
+
+/// One cluster-log line attached to a block, the role that emitted it, its offset from the block
+/// start in microseconds, its lowercase level, and the message body. The microsecond precision
+/// keeps lines that share a millisecond in order, while the frontend renders the offset down to
+/// milliseconds. Serialized into the per-block log file, not benchmark.json.
+#[derive(Serialize, Deserialize)]
+pub struct LogEntry {
+    pub role: String,
+    pub time: i64,
+    pub level: String,
+    pub msg: String,
 }
 
 /// Display metadata for one telemetry metric, driving frontend panels.

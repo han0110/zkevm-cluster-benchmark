@@ -104,4 +104,4 @@ function deriveAggregatorPhase(benchmark: Benchmark, list: PhaseEntry[]): string
 }
 
 // Display label for a block, its metric file name, which doubles as its stable identifier.
-export const blockLabel = (block: Block): string => block.id;
+export const blockLabel = (block: Block): string => block.name;

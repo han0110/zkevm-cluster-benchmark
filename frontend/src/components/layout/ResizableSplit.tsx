@@ -3,7 +3,7 @@
  * divider appears. The split is the right pane's share of the width, persisted under a key so it survives
  * a reload and the navigation remount, clamped so neither pane falls below a usable minimum, and operable
  * from the keyboard. Pages decide each pane and drive the right one from the URL, so this is purely the
- * shared resize mechanism behind the Proofs and Metrics views.
+ * shared resize mechanism behind the Blocks and Metrics views.
  */
 
 import { useCallback, useEffect, useRef, type ReactNode } from 'react';

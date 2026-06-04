@@ -50,6 +50,11 @@ export interface BarMarker {
 // overlapping. The exact value stays in the hover tooltip.
 const LABEL_MIN_FRACTION = 0.05;
 
+// Shared dash style for every vertical reference line on the trace, the hovered-log cursor and the
+// crash and cancel markers, so they read as one family with only their color setting them apart.
+const DASH_WIDTH = 2;
+const DASH_ARRAY: [number, number] = [6, 4];
+
 interface Datum {
   value: number;
   sec: number;
@@ -62,14 +67,21 @@ interface StackedPhaseBarsProps {
   mode: 'share' | 'time';
   // Point markers on specific rows, meaningful only in time mode where the axis is seconds.
   markers?: BarMarker[];
+  // A full-height dashed cursor line at this second, meaningful only in time mode. Drives the
+  // log-console hover that points at the trace moment a hovered line was logged.
+  cursorSec?: number | null;
   rowHeight?: number;
   height?: number;
 }
 
-export function StackedPhaseBars({ rows, mode, markers, rowHeight = 26, height }: StackedPhaseBarsProps) {
+export function StackedPhaseBars({ rows, mode, markers, cursorSec, rowHeight = 26, height }: StackedPhaseBarsProps) {
   const [showSeconds, setShowSeconds] = useState(false);
 
-  const option = useMemo<EChartsCoreOption>(() => {
+  // The base option without the hovered-log cursor, memoized on the inputs that shape the bars, the
+  // absent bands, the crash and cancel markers, and the axes. A cursor hover changes only cursorSec, so
+  // holding this base lets the cursor series recombine below without rebuilding every bar and marker
+  // series object on each hovered log line.
+  const base = useMemo(() => {
     const labels = rows.map(r => r.label);
     // A blank-label spacer row would catch the axis-pointer shadow, so the chart drops the highlight band
     // whenever a spacer is present, leaving the separator row inert.
@@ -165,7 +177,7 @@ export function StackedPhaseBars({ rows, mode, markers, rowHeight = 26, height }
                   {
                     type: 'line',
                     shape: { x1: x, y1: y - barHalf, x2: x, y2: y + barHalf },
-                    style: { stroke: marker.color, lineWidth: 2, lineDash: [4, 4] },
+                    style: { stroke: marker.color, lineWidth: DASH_WIDTH, lineDash: DASH_ARRAY },
                   },
                   {
                     type: 'text',
@@ -188,13 +200,24 @@ export function StackedPhaseBars({ rows, mode, markers, rowHeight = 26, height }
       : [];
 
     return {
+      // Animation off so a cursor hover, which rebuilds the option under the base notMerge render, does
+      // not replay the bar grow animation on every hovered log line.
+      animation: false,
       grid: { left: 8, right: 24, top: 10, bottom: 40, containLabel: true },
       // Phase legend is the ColorDot row below, so the built-in one the base theme adds is hidden.
       legend: { show: false },
       xAxis:
         mode === 'share'
           ? { type: 'value', min: 0, max: 1, axisLabel: { formatter: (v: number) => `${Math.round(v * 100)}%` }, ...namedAxis('Phase share', 28) }
-          : { type: 'value', min: 0, max: axisMax, ...namedAxis('Seconds', 28) },
+          : {
+              type: 'value',
+              min: 0,
+              max: axisMax,
+              // Round the labels to millisecond precision and append the unit, so the axis maximum reads
+              // as 24.603 s rather than a raw float like 24.60299999.
+              axisLabel: { formatter: (v: number) => `${+v.toFixed(3)} s` },
+              ...namedAxis('Seconds', 28),
+            },
       yAxis: { type: 'category', inverse: true, data: labels, axisLabel: { fontSize: 12 } },
       tooltip: {
         trigger: 'axis',
@@ -220,6 +243,76 @@ export function StackedPhaseBars({ rows, mode, markers, rowHeight = 26, height }
     };
   }, [rows, mode, markers, showSeconds]);
 
+  // A bright full-height dashed cursor at the hovered second, drawn on a silent custom series so it
+  // spans the whole grid without a markLine component or joining the stack, with a time badge at the
+  // bottom on the seconds axis. Drawn only when a finite cursor second is supplied. Memoized on cursorSec
+  // alone so a hover rebuilds only this series, not the bars, absent bands, and markers held in the base.
+  const cursorSeries = useMemo(
+    () =>
+      mode === 'time' && cursorSec != null && Number.isFinite(cursorSec)
+        ? [
+            {
+              type: 'custom' as const,
+              z: 7,
+              silent: true,
+              data: [[cursorSec, 0]],
+              renderItem: (
+                params: CustomSeriesRenderItemParams,
+                api: CustomSeriesRenderItemAPI
+              ): CustomSeriesRenderItemReturn => {
+                const sec = api.value(0) as number;
+                const x = (api.coord([sec, 0]) as [number, number])[0];
+                const grid = params.coordSys as unknown as { x: number; y: number; width: number; height: number };
+                const bottom = grid.y + grid.height;
+                // The badge reads the cursor's seconds value to millisecond precision at the bottom,
+                // clamped inside the grid so it never spills past either axis edge.
+                const label = `${sec.toFixed(3)}s`;
+                const width = label.length * 6.4 + 10;
+                const badgeX = Math.min(Math.max(x - width / 2, grid.x), grid.x + grid.width - width);
+                const badgeY = bottom + 5;
+                const height = 16;
+                return {
+                  type: 'group',
+                  children: [
+                    {
+                      type: 'line',
+                      shape: { x1: x, y1: grid.y, x2: x, y2: bottom },
+                      style: { stroke: '#f5f5f5', lineWidth: DASH_WIDTH, lineDash: DASH_ARRAY },
+                    },
+                    {
+                      type: 'rect',
+                      shape: { x: badgeX, y: badgeY, width, height, r: 3 },
+                      style: { fill: '#f5f5f5' },
+                    },
+                    {
+                      type: 'text',
+                      style: {
+                        text: label,
+                        x: badgeX + width / 2,
+                        y: badgeY + height / 2,
+                        fill: '#1a1a1a',
+                        fontSize: 10,
+                        fontWeight: 'bold',
+                        align: 'center',
+                        verticalAlign: 'middle',
+                      },
+                    },
+                  ],
+                };
+              },
+            },
+          ]
+        : [],
+    [mode, cursorSec]
+  );
+
+  // The base recombined with the cursor series. The cursor rides last so it overlays every other series,
+  // matching the prior single-pass build order.
+  const option = useMemo<EChartsCoreOption>(
+    () => ({ ...base, series: [...(base.series as unknown[]), ...cursorSeries] }),
+    [base, cursorSeries]
+  );
+
   const legend = (rows[0]?.segments ?? []).filter(s => !s.transparent);
   return (
     <>
@@ -229,7 +322,11 @@ export function StackedPhaseBars({ rows, mode, markers, rowHeight = 26, height }
         ))}
         <span className="text-faint">Click a bar to switch percent and seconds.</span>
       </div>
-      <EChart option={option} height={height ?? Math.max(180, rows.length * rowHeight + 64)} onEvents={{ click: () => setShowSeconds(s => !s) }} />
+      <EChart
+        option={option}
+        height={height ?? Math.max(180, rows.length * rowHeight + 64)}
+        onEvents={{ click: () => setShowSeconds(s => !s) }}
+      />
     </>
   );
 }

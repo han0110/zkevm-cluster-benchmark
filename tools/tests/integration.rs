@@ -5,6 +5,7 @@
 //! data.
 
 use std::{
+    io::Read,
     path::PathBuf,
     sync::atomic::{AtomicU32, Ordering},
 };
@@ -45,7 +46,7 @@ fn coordinator_log_parses_without_error() {
     let dir = fixture_dir();
     let coord = std::fs::read_to_string(dir.join("logs/coordinator.log")).unwrap();
     // The committed fixture exercises every recognized line shape, so the real coordinator log
-    // must parse without error. An unhandled coordinator line would fail the parse here.
+    // must parse without error.
     let logs = coordinator::parse(&coord).unwrap();
     let success = logs
         .iter()
@@ -107,11 +108,17 @@ fn assembles_lean_benchmark_document() {
     assert_eq!(b.software.guest.version, "v0.9.0");
     assert_eq!(b.software.zkvm.phases.len(), 5);
     assert_eq!(b.software.zkvm.phases[0].name, "input");
-    assert_eq!(b.software.zkvm.phases[0].label, "Receive Input");
+    assert_eq!(b.software.zkvm.phases[0].label, "Input Transfer");
     assert_eq!(b.software.zkvm.phases[3].label, "Prove + Recurse");
     // A fresh parse yields one run, and the fixture basename carries no timestamp so the benchmark
     // id and the run id are both the bare basename.
     assert_eq!(b.id, "fixture");
+    // The name and description come from the run directory's input benchmark.json.
+    assert_eq!(b.name, "fixture");
+    assert_eq!(
+        b.description,
+        "Committed ten-proof zisk fixture run for the parser integration tests."
+    );
     assert_eq!(b.runs.len(), 1);
     let run = &b.runs[0];
     assert_eq!(run.id, "fixture");
@@ -149,11 +156,20 @@ fn assembles_lean_benchmark_document() {
     );
 
     // Each block is identified by its metric file name verbatim, in completion order.
-    let ids: Vec<&str> = run.blocks.iter().map(|bl| bl.id.as_str()).collect();
+    let names: Vec<&str> = run.blocks.iter().map(|bl| bl.name.as_str()).collect();
     let expected: Vec<String> = (25192300..=25192309)
         .map(|n| format!("rpc_block_{n}"))
         .collect();
-    assert_eq!(ids, expected.iter().map(String::as_str).collect::<Vec<_>>());
+    assert_eq!(
+        names,
+        expected.iter().map(String::as_str).collect::<Vec<_>>()
+    );
+    // Block names are unique within the run, the invariant the parser asserts and the views rely
+    // on.
+    let mut unique = names.clone();
+    unique.sort_unstable();
+    unique.dedup();
+    assert_eq!(unique.len(), names.len(), "block names are unique");
 
     let total_gas: u64 = run.blocks.iter().filter_map(|bl| bl.gas_used).sum();
     assert_eq!(total_gas, 279_981_944);
@@ -174,9 +190,9 @@ fn assembles_lean_benchmark_document() {
     assert_eq!(
         tail,
         vec![
-            ("fb", "Frame Buffer Memory", "MB"),
-            ("bar1", "BAR1 Memory", "MB"),
-            ("ccpm", "Protected Memory", "MB"),
+            ("fb", "Frame Buffer Memory", "MiB"),
+            ("bar1", "BAR1 Memory", "MiB"),
+            ("ccpm", "Protected Memory", "MiB"),
         ]
     );
     for node in &run.telemetry.nodes {
@@ -235,7 +251,7 @@ fn first_block_matches_known_values() {
     let first = b.runs[0]
         .blocks
         .iter()
-        .find(|bl| bl.id == "rpc_block_25192300")
+        .find(|bl| bl.name == "rpc_block_25192300")
         .expect("block rpc_block_25192300");
 
     assert_eq!(first.proving_ms, Some(7342), "block 25192300 proving_ms");
@@ -259,20 +275,111 @@ fn first_block_matches_known_values() {
     );
 }
 
-/// Asserts the fixture serializes byte-for-byte to the committed golden document, the enforced
-/// guard that the lean schema, its field order, and its number formatting never drift
-/// unintentionally. Regenerate the golden with `cargo run -- parse-benchmark --input tests/fixture
-/// --output tests/fixture/benchmark.json --force` only when a change to the document is
-/// intended.
+#[test]
+fn block_logs_capture_the_proving_window() {
+    let dir = fixture_dir();
+    let b = parse_to_benchmark(&dir).unwrap();
+    let first = b.runs[0]
+        .blocks
+        .iter()
+        .find(|bl| bl.name == "rpc_block_25192300")
+        .expect("block rpc_block_25192300");
+
+    // The block carries the coordinator and worker log lines of its proving window.
+    assert!(!first.logs.is_empty(), "block carries log lines");
+    let roles: std::collections::BTreeSet<&str> =
+        first.logs.iter().map(|l| l.role.as_str()).collect();
+    assert!(roles.contains("coordinator"), "coordinator lines present");
+    assert!(
+        roles.iter().any(|r| r.starts_with("worker")),
+        "worker lines present, tagged by worker number"
+    );
+    // Every level is kept, so the bulk DEBUG worker trace is captured rather than dropped.
+    assert!(
+        first.logs.iter().any(|l| l.level == "debug"),
+        "debug lines are captured"
+    );
+    // The module path that precedes a level token is dropped, so no message begins with a
+    // `module::path` token the way the raw worker lines do.
+    assert!(
+        first.logs.iter().all(|l| l
+            .msg
+            .split_whitespace()
+            .next()
+            .is_none_or(|w| !w.contains("::"))),
+        "the leading module path is stripped from the message"
+    );
+    // The lines are in microsecond time order, each rebased to an offset from the block start.
+    assert!(
+        first.logs.windows(2).all(|w| w[0].time <= w[1].time),
+        "lines are time ordered"
+    );
+    assert_eq!(
+        first.logs.first().unwrap().time,
+        0,
+        "the first line sits at the block start"
+    );
+    // The log is bounded by the block's proving window, not the whole 223-second run. Time is in
+    // microseconds, so the bound is 30 seconds expressed in microseconds.
+    let last = first.logs.last().unwrap().time;
+    assert!(
+        last < 30_000_000,
+        "lines stay within the proving window, got {last}us"
+    );
+}
+
+#[test]
+fn writes_lean_document_with_sidecar_per_block_log_files() {
+    let dir = tempdir();
+    let out = dir.join("benchmark.json");
+    parse_benchmark::run(&[fixture_dir()], &out, false, false).expect("write succeeds");
+
+    // benchmark.json stays lean, carrying no inline block logs.
+    let doc_text = std::fs::read_to_string(&out).unwrap();
+    assert!(
+        !doc_text.contains("\"logs\""),
+        "benchmark.json carries no inline logs"
+    );
+
+    // Each block's logs land in a per-block tar.gz under log/{bench_id}/{run_id}/ named by the
+    // block, holding the role, time, level, and message of each kept line. The fixture's bench
+    // id and run id are both "fixture", and the block name is verbatim.
+    let log_file = dir
+        .join("log")
+        .join("fixture")
+        .join("fixture")
+        .join("rpc_block_25192300.tar.gz");
+    assert!(log_file.is_file(), "per-block log archive written");
+
+    // The archive gunzips and untars to a single member whose JSON is the block's log lines.
+    let gz = flate2::read::GzDecoder::new(std::fs::File::open(&log_file).unwrap());
+    let mut archive = tar::Archive::new(gz);
+    let mut member = archive.entries().unwrap().next().unwrap().unwrap();
+    let mut text = String::new();
+    member.read_to_string(&mut text).unwrap();
+    let entries: serde_json::Value = serde_json::from_str(&text).unwrap();
+    let arr = entries.as_array().expect("an array of log lines");
+    assert!(!arr.is_empty(), "the block's log archive is not empty");
+    let first = &arr[0];
+    assert!(first.get("role").and_then(|v| v.as_str()).is_some());
+    assert!(first.get("time").and_then(|v| v.as_i64()).is_some());
+    assert!(first.get("level").and_then(|v| v.as_str()).is_some());
+    assert!(first.get("msg").and_then(|v| v.as_str()).is_some());
+}
+
+/// Asserts the fixture serializes byte-for-byte to the committed golden document, guarding the lean
+/// schema, its field order, and its number formatting against unintended drift. Regenerate the
+/// golden with `cargo run -- parse-benchmark --input tests/fixture --output
+/// tests/fixture/output.json --force` only when a change to the document is intended.
 #[test]
 fn fixture_serializes_byte_for_byte_to_the_golden_document() {
     let generated =
         tools::parse_benchmark::output::to_json(&parse_to_benchmark(&fixture_dir()).unwrap())
             .unwrap();
-    let expected = std::fs::read_to_string(fixture_dir().join("benchmark.json")).unwrap();
+    let expected = std::fs::read_to_string(fixture_dir().join("output.json")).unwrap();
     assert_eq!(
         generated, expected,
-        "serialized benchmark.json drifted from tests/fixture/benchmark.json"
+        "serialized benchmark.json drifted from tests/fixture/output.json"
     );
 }
 
@@ -282,14 +389,14 @@ fn write_refuses_to_overwrite_without_force() {
     let dir = tempdir();
     let out = dir.join("benchmark.json");
 
-    parse_benchmark::run(&fixture_dir(), &out, false, false).expect("first write succeeds");
-    let err = parse_benchmark::run(&fixture_dir(), &out, false, false)
+    parse_benchmark::run(&[fixture_dir()], &out, false, false).expect("first write succeeds");
+    let err = parse_benchmark::run(&[fixture_dir()], &out, false, false)
         .expect_err("a second write without --force is refused");
     assert!(
         matches!(err, parse_benchmark::ParseError::OutputExists(_)),
         "expected OutputExists, got {err:?}"
     );
-    parse_benchmark::run(&fixture_dir(), &out, true, false).expect("--force overwrites");
+    parse_benchmark::run(&[fixture_dir()], &out, true, false).expect("--force overwrites");
 
     let doc = parse_benchmark::output::read(&out).unwrap();
     assert_eq!(doc.runs.len(), 1, "a forced overwrite is still one run");
@@ -302,16 +409,16 @@ fn patch_appends_a_second_run_and_dedupes_the_id() {
     let dir = tempdir();
     let out = dir.join("benchmark.json");
 
-    let missing = parse_benchmark::run(&fixture_dir(), &out, false, true)
+    let missing = parse_benchmark::run(&[fixture_dir()], &out, false, true)
         .expect_err("patching a missing target is refused");
     assert!(
         matches!(missing, parse_benchmark::ParseError::PatchTargetMissing(_)),
         "expected PatchTargetMissing, got {missing:?}"
     );
 
-    parse_benchmark::run(&fixture_dir(), &out, false, false).expect("seed the document");
+    parse_benchmark::run(&[fixture_dir()], &out, false, false).expect("seed the document");
     let added =
-        parse_benchmark::run(&fixture_dir(), &out, false, true).expect("patch appends a run");
+        parse_benchmark::run(&[fixture_dir()], &out, false, true).expect("patch appends a run");
     assert_eq!(
         added, EXPECTED_PROOFS,
         "the patch added the fixture's blocks"
@@ -320,9 +427,33 @@ fn patch_appends_a_second_run_and_dedupes_the_id() {
     let doc = parse_benchmark::output::read(&out).unwrap();
     assert_eq!(doc.runs.len(), 2);
     assert_eq!(doc.id, "fixture");
-    // The re-parsed run carries the same id, so the append suffixes the duplicate to stay addressable.
+    assert_eq!(doc.name, "fixture");
+    // The re-parsed run carries the same id, so the append suffixes the duplicate to stay
+    // addressable.
     assert_eq!(doc.runs[0].id, "fixture");
     assert_eq!(doc.runs[1].id, "fixture-patch-1");
     // Both runs carry the fixture's ten blocks, since each is a full parse of the same directory.
     assert_eq!(doc.runs[1].blocks.len(), EXPECTED_PROOFS);
+}
+
+/// A patch is refused when the run's benchmark name differs from the existing document, so a run is
+/// never appended to a different benchmark.
+#[test]
+fn patch_refuses_a_different_benchmark_name() {
+    let dir = tempdir();
+    let out = dir.join("benchmark.json");
+
+    parse_benchmark::run(&[fixture_dir()], &out, false, false).expect("seed the document");
+    // Rename the seeded benchmark, so the next patch arrives from a run whose name no longer
+    // matches.
+    let mut doc = parse_benchmark::output::read(&out).unwrap();
+    doc.name = "other-benchmark".to_string();
+    parse_benchmark::output::write(&doc, &out).unwrap();
+
+    let err = parse_benchmark::run(&[fixture_dir()], &out, false, true)
+        .expect_err("a name mismatch is refused");
+    assert!(
+        matches!(err, parse_benchmark::ParseError::PatchMismatch("name")),
+        "expected PatchMismatch(name), got {err:?}"
+    );
 }

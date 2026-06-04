@@ -28,7 +28,12 @@ export function useDismissable(
       setOpen(false);
     };
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setOpen(false);
+      // Marking Escape handled so an underlying master-detail panel, whose own Escape listener checks
+      // defaultPrevented, does not also close beneath this overlay. The topmost overlay claims the key.
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setOpen(false);
+      }
     };
     document.addEventListener('mousedown', onPointer);
     document.addEventListener('keydown', onKey);

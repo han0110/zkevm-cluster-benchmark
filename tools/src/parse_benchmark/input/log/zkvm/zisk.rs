@@ -18,7 +18,7 @@ pub struct ZiskParser;
 /// Returns the ordered zisk phase preset.
 pub fn zisk_phases() -> Vec<PhaseDef> {
     [
-        ("input", "Receive Input"),
+        ("input", "Input Transfer"),
         ("emulation", "Emulation"),
         ("commit", "Witgen + Commit"),
         ("prove", "Prove + Recurse"),
@@ -60,8 +60,10 @@ impl ZkvmParser for ZiskParser {
         let logs = raw_jobs
             .iter()
             .map(|raw| {
+                // The agg and stage maps both key on the eight-hex job prefix, so the coordinator
+                // id is normalized once and used for both lookups.
                 let key = job_prefix(&raw.id);
-                phases::build_log(raw, worker.agg.get(&raw.id), worker.stages.get(&key))
+                phases::build_log(raw, worker.agg.get(&key), worker.stages.get(&key))
             })
             .collect();
 

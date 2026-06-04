@@ -49,11 +49,15 @@ pub enum ParseError {
     #[error("cannot patch {0}: no existing benchmark.json at the output path")]
     PatchTargetMissing(PathBuf),
 
-    /// A patch was requested but the run came from a different cluster than the existing document.
-    #[error(
-        "cannot patch: the run's {0} differs from the existing benchmark, so it is a different cluster"
-    )]
+    /// A patch was requested but the run's identity field differs from the existing document, so it
+    /// belongs to a different benchmark or cluster.
+    #[error("cannot patch: the run's {0} differs from the existing benchmark document")]
     PatchMismatch(&'static str),
+
+    /// Two blocks in a run shared a name. Block names are the metric file names that views index
+    /// on as a unique id.
+    #[error("duplicate block name {0:?}; block names must be unique within a run")]
+    DuplicateBlockName(String),
 }
 
 /// Crate result alias over [`ParseError`].

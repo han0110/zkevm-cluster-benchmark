@@ -4,10 +4,10 @@
  * focused node or proof changes.
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { EChart, type ChartInstance } from '@/components/charts/EChart';
-import { ChartCard } from '@/components/common/ChartCard';
+import { ChartPanel } from '@/components/common/ChartPanel';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { syncDataZoom, parseDataZoom, highlightArea, type AxisTooltipParam } from '@/utils/chartHelpers';
 import { formatAxisSeconds } from '@/utils/format';
@@ -84,6 +84,11 @@ export function MetricChart({
     };
   }, [onZoom]);
 
+  // Proof-window bounds as primitives so a fresh highlight array on each render does not rebuild the
+  // option while a genuine window change still does.
+  const hlStart = highlight?.[0];
+  const hlEnd = highlight?.[1];
+
   const option = useMemo<EChartsCoreOption>(() => {
     const bottom = zoom === 'sync' && showSlider ? 40 : 16;
 
@@ -101,9 +106,10 @@ export function MetricChart({
       data: s.points,
     }));
 
-    // Phase bands and the hover highlight ride on silent placeholder series so they paint regardless of
-    // toggled data series. The highlight has its own series so a hover repaints it via a cheap merge, not
-    // a full rebuild that would reprocess every line and stall the tooltip.
+    // Phase bands and the proof-window highlight ride on silent placeholder series so they paint
+    // regardless of toggled data series. The static highlight rides in the option itself so a notMerge
+    // apply always carries it, while the node view repaints a transient hover highlight onto the same
+    // series through a cheap merge that touches only it.
     const bandAreas = (bands ?? []).map(b => [
       {
         xAxis: b.start,
@@ -112,9 +118,12 @@ export function MetricChart({
       },
       { xAxis: b.end },
     ]);
+    // Phase bands already mark the window, so the neutral highlight is suppressed when they show.
+    const highlightData =
+      hlStart != null && hlEnd != null && !(bands && bands.length) ? highlightArea(colors, [hlStart, hlEnd]) : [];
     const markSeries = [
       { id: 'mc-bands', name: '__bands__', type: 'line' as const, data: [] as Array<[number, number]>, silent: true, markArea: { silent: true, data: bandAreas } },
-      { id: 'mc-highlight', name: '__highlight__', type: 'line' as const, data: [] as Array<[number, number]>, silent: true, markArea: { silent: true, data: [] as Array<Array<Record<string, unknown>>> } },
+      { id: 'mc-highlight', name: '__highlight__', type: 'line' as const, data: [] as Array<[number, number]>, silent: true, markArea: { silent: true, data: highlightData } },
     ];
 
     return {
@@ -169,36 +178,11 @@ export function MetricChart({
         zoom === 'sync' ? syncDataZoom(colors, showSlider, ...(getZoom ? getZoom() : [0, 100]), minValueSpan) : undefined,
       series: [...lines, ...markSeries],
     };
-    // highlight is intentionally not a dep because the merge effect below repaints it instead of
-    // rebuilding the option, so a hover does not reprocess the lines.
-  }, [metric, series, windowSec, bands, yMin, yMax, zoom, showSlider, getZoom, minValueSpan, colors]);
-
-  // Repaint the hover highlight with a merge touching only the highlight series so moving across blocks
-  // never rebuilds the option. Suppressed when phase bands are present (they already mark the window),
-  // and re-applied after a rebuild restores the empty markArea.
-  const instRef = useRef<ChartInstance | null>(null);
-  const handleReady = useCallback(
-    (inst: ChartInstance) => {
-      instRef.current = inst;
-      onReady?.(inst);
-    },
-    [onReady]
-  );
-  useEffect(() => {
-    const inst = instRef.current;
-    if (!inst) return;
-    const show = highlight && !(bands && bands.length);
-    const data = show ? highlightArea(colors, highlight) : [];
-    inst.setOption({ series: [{ id: 'mc-highlight', markArea: { data } }] });
-  }, [highlight, bands, colors, option]);
+  }, [metric, series, windowSec, bands, hlStart, hlEnd, yMin, yMax, zoom, showSlider, getZoom, minValueSpan, colors]);
 
   return (
-    <ChartCard padding="p-3">
-      <div className="mb-1 flex items-baseline justify-between">
-        <span className="text-sm font-medium text-foreground">{metric.label}</span>
-        <span className="text-xs text-muted">{metric.unit}</span>
-      </div>
-      <EChart option={option} height={height} group={group} onEvents={onEvents} onReady={handleReady} />
-    </ChartCard>
+    <ChartPanel title={metric.label} action={<span className="text-xs text-muted">{metric.unit}</span>}>
+      <EChart option={option} height={height} group={group} onEvents={onEvents} onReady={onReady} />
+    </ChartPanel>
   );
 }

@@ -18,3 +18,5 @@ serde_json = { version = "1", features = ["preserve_order"] }
 regex = "1.12"
 jiff = "0.2"
 thiserror = "2"
+flate2 = "1"
+tar = "0.4"

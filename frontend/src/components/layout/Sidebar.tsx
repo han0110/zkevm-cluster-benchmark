@@ -9,8 +9,9 @@ import type { ComponentType, SVGProps } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { cx } from '@/utils/cx';
 import { ACTIVE_ACCENT, FOCUS_RING } from '@/utils/styles';
-import { Dropdown } from '@/components/common/Dropdown';
-import { IconChevronLeft, IconChevronRight, IconNodes, IconOverview, IconProofs } from '@/components/common/icons';
+import { BenchmarkPicker } from '@/components/layout/BenchmarkPicker';
+import { IconButton } from '@/components/common/IconButton';
+import { IconChevronLeft, IconChevronRight, IconNodes, IconOverview, IconBlocks } from '@/components/common/icons';
 import { setRunParam, useRunSearch } from '@/hooks/useRunSearch';
 import type { RunIndexEntry } from '@/types/benchmark';
 
@@ -18,6 +19,9 @@ interface SidebarProps {
   title: string;
   runs: RunIndexEntry[];
   selectedRunId: string | null;
+  // The active benchmark's display name once loaded, shown on the picker trigger. Null while the
+  // document loads, when the id stands in.
+  selectedName: string | null;
   collapsed: boolean;
   onToggle: () => void;
 }
@@ -29,22 +33,22 @@ interface Tab {
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
-// Each view opens on its own table, the proofs and metrics views sliding their detail in from there.
+// Each view opens on its own table, the blocks and metrics views sliding their detail in from there.
 const TABS: Tab[] = [
   { label: 'Overview', base: '/overview', to: '/overview', Icon: IconOverview },
-  { label: 'Proofs', base: '/proofs', to: '/proofs', Icon: IconProofs },
+  { label: 'Blocks', base: '/blocks', to: '/blocks', Icon: IconBlocks },
   { label: 'Metrics', base: '/metrics', to: '/metrics', Icon: IconNodes },
 ];
 
-export function Sidebar({ title, runs, selectedRunId, collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ title, runs, selectedRunId, selectedName, collapsed, onToggle }: SidebarProps) {
   const [, setParams] = useSearchParams();
   const { pathname } = useLocation();
 
   // Only the run travels between views, so links carry just that parameter not the whole query string.
   const search = useRunSearch();
 
-  // A view is active when the path is its base or sits under it, so an open proof keeps Proofs lit and a
-  // focused node keeps Nodes lit.
+  // A view is active when the path is its base or sits under it, so an open block keeps Blocks lit and a
+  // focused node keeps Metrics lit.
   const isActive = (base: string): boolean => pathname === base || pathname.startsWith(`${base}/`);
 
   return (
@@ -67,12 +71,11 @@ export function Sidebar({ title, runs, selectedRunId, collapsed, onToggle }: Sid
 
       {!collapsed && runs.length === 0 && <p className="text-xs text-muted">No runs found.</p>}
       {!collapsed && runs.length > 0 && (
-        // The benchmark id is unique among the documents, so it serves directly as the dropdown label.
-        <Dropdown
-          items={runs.map(r => ({ id: r.id, label: r.id }))}
+        <BenchmarkPicker
+          entries={runs}
           selectedId={selectedRunId}
-          onSelect={item => setRunParam(setParams, item.id)}
-          ariaLabel="Select benchmark"
+          selectedName={selectedName}
+          onSelect={id => setRunParam(setParams, id)}
         />
       )}
 
@@ -114,19 +117,13 @@ export function Sidebar({ title, runs, selectedRunId, collapsed, onToggle }: Sid
         })}
       </div>
 
-      <button
-        type="button"
+      <IconButton
         onClick={onToggle}
-        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        className={cx(
-          'mt-auto flex items-center gap-2 rounded-md px-2 py-2 text-sm text-muted transition-colors hover:bg-elevated/60 hover:text-foreground',
-          FOCUS_RING,
-          collapsed ? 'justify-center' : 'self-end'
-        )}
+        label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        className={cx('mt-auto', !collapsed && 'self-end')}
       >
-        {collapsed ? <IconChevronRight className="h-5 w-5" /> : <IconChevronLeft className="h-5 w-5" />}
-      </button>
+        {collapsed ? <IconChevronRight /> : <IconChevronLeft />}
+      </IconButton>
     </nav>
   );
 }

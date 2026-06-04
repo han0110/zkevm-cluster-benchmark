@@ -10,22 +10,22 @@ import type { Benchmark, Block, Run } from '@/types/benchmark';
 export const runById = (bench: Benchmark, id: string | undefined): Run | undefined =>
   id == null ? undefined : bench.runs.find(r => r.id === id);
 
-// The latest attempt at each block across every run, sorted by id, taking a multiply-proved block from
+// The latest attempt at each block across every run, sorted by name, taking a multiply-proved block from
 // the latest-started run so a patched benchmark reads as one merged result. The overview charts this
 // whole-benchmark set because the newest run can be a small recovery patch.
 export function latestBlocks(bench: Benchmark): Block[] {
   const latest = new Map<string, { block: Block; startedAt: number }>();
   for (const run of bench.runs) {
     for (const block of run.blocks) {
-      const prev = latest.get(block.id);
+      const prev = latest.get(block.name);
       if (prev == null || run.started_at > prev.startedAt) {
-        latest.set(block.id, { block, startedAt: run.started_at });
+        latest.set(block.name, { block, startedAt: run.started_at });
       }
     }
   }
   return [...latest.values()]
     .map(entry => entry.block)
-    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 }
 
 // The run at the given index, the value the detail paths carry, or undefined when the segment is absent

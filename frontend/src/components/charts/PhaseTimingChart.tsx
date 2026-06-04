@@ -13,13 +13,17 @@ import { namedAxis, sliderDataZoom, parseDataZoom, grafanaSelect } from '@/utils
 import { dash, formatSeconds } from '@/utils/format';
 import type { PhaseRegistry } from '@/utils/phases';
 
+// Block-time reference thresholds in seconds, drawn as dashed horizontal lines so a reader sees each
+// block's proving time against the target.
+const THRESHOLDS_S = [9, 12];
+
 interface PhaseTimingChartProps {
   // X-axis category labels, one per block.
   labels: string[];
   // Per-block durations in seconds, keyed by phase name.
   values: Record<string, number[]>;
   registry: PhaseRegistry;
-  // Optional per-block total proof time, drawn as the leading dashed envelope line.
+  // Optional per-block total proof time, drawn as the leading solid envelope line.
   total?: number[];
   height?: number;
   // Zoom window in percent, read on rebuild so it survives a legend toggle without being an option dep
@@ -49,10 +53,10 @@ export function PhaseTimingChart({
   const theme = useThemeColors();
 
   // Legend identities keyed by series name so the selection set drives visibility. Total leads with a
-  // dashed swatch matching its envelope line, then one dot per registry phase.
+  // solid swatch matching its envelope line, then one dot per registry phase.
   const items = useMemo(() => {
     const phases = registry.list.map(p => ({ key: p.label, label: p.label, color: p.color }));
-    return total ? [{ key: 'Total', label: 'Total', color: theme.muted, dash: [4, 4] as number[] }, ...phases] : phases;
+    return total ? [{ key: 'Total', label: 'Total', color: theme.muted }, ...phases] : phases;
   }, [registry, total, theme]);
 
   const allKeys = useMemo(() => items.map(i => i.key), [items]);
@@ -62,10 +66,10 @@ export function PhaseTimingChart({
   const [selected, setSelected] = useState<Set<string>>(() => new Set(allKeys));
   useEffect(() => setSelected(new Set(sig.split(','))), [sig]);
 
-  // Y-axis ceiling fixed over every series including the total envelope so isolating one phase never
-  // rescales the axis, which would re-render and jump on each click.
+  // Y-axis ceiling fixed over every series including the total envelope and the reference thresholds, so
+  // isolating one phase never rescales the axis and both threshold lines stay in view.
   const yMax = useMemo(() => {
-    const all = [...(total ?? []), ...registry.list.flatMap(p => values[p.name] ?? [])];
+    const all = [...(total ?? []), ...registry.list.flatMap(p => values[p.name] ?? []), ...THRESHOLDS_S];
     const peak = all.reduce((m, v) => (v != null && v > m ? v : m), 0);
     return peak > 0 ? Math.ceil(peak * 1.05) : 1;
   }, [values, registry, total]);
@@ -83,12 +87,28 @@ export function PhaseTimingChart({
       emphasis: { focus: 'series' as const },
       data: data ?? [],
     });
-    // Total leads as a dashed envelope, then one line per registry phase. Only selected series are
+    // Total leads as a solid envelope, then one line per registry phase. Only selected series are
     // emitted so isolating a phase hides the rest without disturbing the fixed axes.
     const series = [
-      ...(total ? [line('Total', theme.muted, total, true)] : []),
+      ...(total ? [line('Total', theme.muted, total)] : []),
       ...registry.list.map(phase => line(phase.label, phase.color, values[phase.name])),
     ].filter(s => selected.has(s.name));
+
+    // Dashed reference thresholds on a silent series so they always show regardless of the selection
+    // and never join the tooltip, each labelled with its second value at the right edge.
+    const thresholds = {
+      type: 'line' as const,
+      data: [] as number[],
+      silent: true,
+      markLine: {
+        silent: true,
+        symbol: 'none' as const,
+        animation: false,
+        lineStyle: { color: theme.faint, type: 'dashed' as const, width: 1 },
+        label: { show: true, position: 'insideEndTop' as const, formatter: '{c}s', color: theme.faint, fontSize: 10 },
+        data: THRESHOLDS_S.map(y => ({ yAxis: y })),
+      },
+    };
 
     return {
       // Animation off so a wheel zoom applies instantly, keeping scroll smooth and matching the synced
@@ -108,7 +128,7 @@ export function PhaseTimingChart({
         valueFormatter: (v: number | null) => dash(v, formatSeconds),
       },
       dataZoom: sliderDataZoom(theme, ...(getZoom ? getZoom() : [0, 100]), minValueSpan),
-      series,
+      series: [...series, thresholds],
     };
     // getZoom is read for the window but kept out of the deps on purpose so a wheel does not rebuild the
     // option, the window is only re-read when the series or axis change.

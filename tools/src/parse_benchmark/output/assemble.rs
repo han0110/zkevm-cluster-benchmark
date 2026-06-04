@@ -8,12 +8,12 @@ use crate::parse_benchmark::{
     input::{
         Sources,
         dmon::DmonRow,
-        log::{Log, LogStatus, Ts, job_prefix, zkvm::ParsedLogs},
+        log::{Log, LogStatus, Ts, job_prefix, lines::RawLine, zkvm::ParsedLogs},
         metrics::{MetricBlock, MetricStatus},
     },
     output::schema::{
-        Benchmark, Block, BlockNode, Guest, Hardware, Metric, NodeStats, NodeTelemetry, Phase,
-        PhaseWindow, Run, Software, Statistics, Telemetry, Zkvm,
+        Benchmark, Block, BlockNode, Guest, Hardware, LogEntry, Metric, NodeStats, NodeTelemetry,
+        Phase, PhaseWindow, Run, Software, Statistics, Telemetry, Zkvm,
     },
 };
 
@@ -26,8 +26,8 @@ fn round1(x: f64) -> f64 {
 const SCHEMA_VERSION: u32 = 1;
 
 /// One GPU telemetry metric, its wire key and display metadata, how to read it off a dmon row, and
-/// whether it serializes with one decimal place. The catalog, per-cell read, and rounding all derive
-/// from this, so adding a metric is one row here.
+/// whether it serializes with one decimal place. The catalog, per-cell read, and rounding all
+/// derive from this, so adding a metric is one row here.
 struct MetricDef {
     key: &'static str,
     label: &'static str,
@@ -82,9 +82,9 @@ const METRICS: [MetricDef; 12] = [
     metric("pclk", "Processor Clock", "MHz", None, |r| r.pclk, false),
     metric("pviol", "Power Violation", "%", None, |r| r.pviol, false),
     metric("tviol", "Thermal Violation", "%", None, |r| r.tviol, false),
-    metric("fb", "Frame Buffer Memory", "MB", None, |r| r.fb, false),
-    metric("bar1", "BAR1 Memory", "MB", None, |r| r.bar1, false),
-    metric("ccpm", "Protected Memory", "MB", None, |r| r.ccpm, false),
+    metric("fb", "Frame Buffer Memory", "MiB", None, |r| r.fb, false),
+    metric("bar1", "BAR1 Memory", "MiB", None, |r| r.bar1, false),
+    metric("ccpm", "Protected Memory", "MiB", None, |r| r.ccpm, false),
 ];
 
 /// Converts a metric reading to a JSON number, an integer or one decimal per the flag, or null when
@@ -99,8 +99,32 @@ fn metric_cell(one_decimal: bool, value: Option<f64>) -> Value {
     }
 }
 
-/// Assembles the parsed logs and measured sources into the final benchmark document.
-pub fn assemble(parsed: ParsedLogs, sources: Sources, run_id: &str) -> Benchmark {
+/// The benchmark name derived from a run id, the run id with a trailing -YYYYMMDD-HHMMSS timestamp
+/// dropped so the several timestamped runs of one benchmark share a name. A run id without that
+/// suffix is returned unchanged.
+fn benchmark_name(run_id: &str) -> String {
+    run_id
+        .rsplit_once('-')
+        .and_then(|(rest, time)| {
+            let (date_rest, date) = rest.rsplit_once('-')?;
+            let is_time = time.len() == 6 && time.bytes().all(|b| b.is_ascii_digit());
+            let is_date = date.len() == 8 && date.bytes().all(|b| b.is_ascii_digit());
+            (is_time && is_date).then(|| date_rest.to_string())
+        })
+        .unwrap_or_else(|| run_id.to_string())
+}
+
+/// Assembles the parsed logs and measured sources into the final benchmark document. The benchmark
+/// name and description come from the run directory's input benchmark.json, and an empty name falls
+/// back to the benchmark name derived from the run id so the several timestamped runs of one
+/// benchmark still share a name and merge together.
+pub fn assemble(
+    parsed: ParsedLogs,
+    sources: Sources,
+    run_id: &str,
+    name: String,
+    description: String,
+) -> Benchmark {
     let ParsedLogs {
         name: zkvm_name,
         phases,
@@ -111,6 +135,7 @@ pub fn assemble(parsed: ParsedLogs, sources: Sources, run_id: &str) -> Benchmark
         meta,
         hardware,
         dmon,
+        raw_log,
     } = sources;
 
     let t0 = run_epoch(&logs, &dmon);
@@ -127,7 +152,7 @@ pub fn assemble(parsed: ParsedLogs, sources: Sources, run_id: &str) -> Benchmark
         dmon.keys().map(|d| format!("node{d}")).collect()
     };
 
-    let out_blocks = build_blocks(&logs, &blocks, &node_ids, phases.len(), t0);
+    let out_blocks = build_blocks(&logs, &blocks, &node_ids, phases.len(), t0, &raw_log);
     let telemetry = build_telemetry(&dmon, t0);
     let statistics = build_statistics(&out_blocks, &logs, &dmon, &node_ids);
 
@@ -144,6 +169,17 @@ pub fn assemble(parsed: ParsedLogs, sources: Sources, run_id: &str) -> Benchmark
         statistics,
         blocks: out_blocks,
         telemetry,
+    };
+
+    // The document id is the run id, the identity later runs of the same benchmark append against.
+    let id = run_id.to_string();
+    // An absent input name falls back to the benchmark name derived from the run id, the run id
+    // with its trailing timestamp dropped, so two timestamped runs of one benchmark share a
+    // name and merge into one document while the id stays the per-run identity.
+    let name = if name.is_empty() {
+        benchmark_name(run_id)
+    } else {
+        name
     };
 
     Benchmark {
@@ -171,27 +207,11 @@ pub fn assemble(parsed: ParsedLogs, sources: Sources, run_id: &str) -> Benchmark
                 version: meta.guest_version.unwrap_or_default(),
             },
         },
-        id: benchmark_id(run_id),
+        id,
+        name,
+        description,
         runs: vec![run],
     }
-}
-
-/// The benchmark id, the run id with a trailing -YYYYMMDD-HHMMSS timestamp dropped.
-///
-/// A run id is the input directory basename like mainnet-25192300-100-20260602-031552, whose
-/// benchmark id is mainnet-25192300-100. Repeated runs differ only in that timestamp, so they share
-/// a benchmark id and a patch can gather them into one document. A run id without the suffix is
-/// returned whole.
-fn benchmark_id(run_id: &str) -> String {
-    let is_digits = |s: &str, n: usize| s.len() == n && s.bytes().all(|b| b.is_ascii_digit());
-    if let Some((head, time)) = run_id.rsplit_once('-')
-        && let Some((base, date)) = head.rsplit_once('-')
-        && is_digits(date, 8)
-        && is_digits(time, 6)
-    {
-        return base.to_string();
-    }
-    run_id.to_string()
 }
 
 /// The earliest phase-window start across a log's nodes, anchoring a job with no start time.
@@ -225,16 +245,18 @@ fn run_epoch(logs: &[Log], dmon: &BTreeMap<u32, Vec<DmonRow>>) -> i64 {
 /// Builds one block per metric in completion order, enriched with the log that timed it.
 ///
 /// The metric archive is the source of truth for which proofs exist, so a log with no metric is not
-/// emitted. Each block's nodes match the shared node axis, so a node that took no part still holds a
-/// slot of null phases at its index.
+/// emitted. Each block's nodes match the shared node axis, so a node that took no part still holds
+/// a slot of null phases at its index.
 fn build_blocks(
     logs: &[Log],
     blocks: &[MetricBlock],
     node_ids: &[String],
     phase_count: usize,
     t0: i64,
+    raw_log: &[RawLine],
 ) -> Vec<Block> {
     let matched = match_blocks_to_logs(logs, blocks);
+    let starts = job_starts(raw_log);
     blocks
         .iter()
         .enumerate()
@@ -245,7 +267,26 @@ fn build_blocks(
                 node_ids,
                 phase_count,
                 t0,
+                raw_log,
+                &starts,
             )
+        })
+        .collect()
+}
+
+/// The job-start instants of the cluster log, each coordinator "[Job] Started" timestamp in
+/// microseconds paired with its job prefix, kept in time order since the raw log is sorted. The
+/// coordinator start precedes the workers' own contribution markers and is present even for a job
+/// no worker ever began, so a failed block's log window capped at the next different job's start
+/// never absorbs the job that follows it, neither its coordinator dispatch nor its worker restart
+/// lines.
+fn job_starts(raw_log: &[RawLine]) -> Vec<(i64, String)> {
+    raw_log
+        .iter()
+        .filter_map(|l| {
+            l.msg
+                .strip_prefix("[Job] Started JobId(")
+                .map(|rest| (l.ts.epoch_us(), job_prefix(rest)))
         })
         .collect()
 }
@@ -260,6 +301,8 @@ fn build_block(
     node_ids: &[String],
     phase_count: usize,
     t0: i64,
+    raw_log: &[RawLine],
+    starts: &[(i64, String)],
 ) -> Block {
     let start_abs = log
         .and_then(|l| l.t_start.map(Ts::epoch_ms).or_else(|| earliest_window(l)))
@@ -284,12 +327,15 @@ fn build_block(
                 Some(n) => n.phases.iter().map(|w| rel(*w)).collect(),
                 None => vec![None; phase_count],
             };
-            // The log's per-node crash or cancel marker is preferred since it knows when and how the
-            // node ended. The metric reason's blamed node is the fallback when the log holds no
-            // per-node end, placed at the job's terminal time.
+            // The log's per-node crash or cancel marker is preferred since it knows when and how
+            // the node ended. The metric reason's blamed node is the fallback when the
+            // log holds no per-node end, placed at the job's terminal time.
             let (crashed_ms, crash_kind) = match log_node.and_then(|n| n.end) {
+                // The offset is floored to zero so a worker crash or cancel logged before the
+                // coordinator start, whether from cross-host clock skew or a cancel that preceded
+                // the job Started line, never renders left of the time origin.
                 Some(end) => (
-                    Some(end.at_ms - start_abs),
+                    Some((end.at_ms - start_abs).max(0)),
                     Some(end.kind.as_str().to_string()),
                 ),
                 None if metric.crashed_nodes.iter().any(|n| n == node_id) => (
@@ -298,8 +344,9 @@ fn build_block(
                 ),
                 None => (None, None),
             };
-            // A node took part when the log lists it among the participants. With no log there is no
-            // participation evidence, so the node is assumed present rather than flagged absent.
+            // A node took part when the log lists it among the participants. With no log there is
+            // no participation evidence, so the node is assumed present rather than
+            // flagged absent.
             let participated = match log {
                 Some(l) => l.participants.iter().any(|p| p == node_id),
                 None => true,
@@ -314,7 +361,7 @@ fn build_block(
         .collect();
 
     Block {
-        id: metric.name.clone(),
+        name: metric.name.clone(),
         status: metric.status.as_str().to_string(),
         start_ms: start_abs - t0,
         gas_used: metric.block_used_gas,
@@ -323,14 +370,98 @@ fn build_block(
         verification_time_ms: metric.verification_time_ms,
         meta: log.map(|l| l.meta.clone()).unwrap_or_default(),
         nodes,
+        logs: block_logs(log, raw_log, start_abs, metric, starts),
     }
+}
+
+/// The kept cluster-log lines within a block's proving window, each rebased to a microsecond offset
+/// from the block start. A clean block runs to its terminal time, falling back to the proving
+/// duration when the log carries no end. A failed block instead runs to just before the next
+/// different job's start so the following job is not pulled in, neither its coordinator dispatch
+/// nor its worker restart lines, since a crashed node begins the next proof within about a second.
+/// Cleanup that interleaves in time with the next job is bounded out, because the shared
+/// role-tagged log axis cannot separate the failed job's lagging cleanup from the next job's lines.
+/// When no following job bounds a failed block, the window reaches the latest node end. Time is at
+/// microsecond precision so lines that share a millisecond keep their order, while the frontend
+/// renders the offset down to milliseconds. A block with no matched log carries no lines, since it
+/// has no window to slice. The lines are sliced from the microsecond-sorted set by binary search.
+fn block_logs(
+    log: Option<&Log>,
+    raw_log: &[RawLine],
+    start_abs: i64,
+    metric: &MetricBlock,
+    starts: &[(i64, String)],
+) -> Vec<LogEntry> {
+    let Some(log) = log else {
+        return Vec::new();
+    };
+    // The block start in microseconds, the job start when known and the millisecond window start
+    // otherwise, so every offset is non-negative and the first window line sits at zero.
+    let start_us = log.t_start.map(Ts::epoch_us).unwrap_or(start_abs * 1000);
+    // The next different job's first contribution, the upper bound a block's window never crosses.
+    // The starts are sorted ascending by microsecond, so a binary search locates the first start
+    // strictly after the block start and a short forward scan finds the first different job.
+    let this = job_prefix(&log.id);
+    let from = starts.partition_point(|(us, _)| *us <= start_us);
+    let next = starts[from..]
+        .iter()
+        .find(|(_, prefix)| *prefix != this)
+        .map(|(us, _)| *us);
+    // A terminal time bounds the window directly. The dispatch-relative proving-time fallback can
+    // overshoot the true finish, so it is also capped at just before the next different job's start
+    // so it can never absorb the following job's lines.
+    let base_end = log
+        .t_end
+        .map(Ts::epoch_us)
+        .or_else(|| {
+            metric.proving_time_ms.map(|m| {
+                let estimate = start_us + m as i64 * 1000;
+                match next {
+                    Some(n) => estimate.min(n - 1),
+                    None => estimate,
+                }
+            })
+        })
+        .unwrap_or(start_us);
+    // A clean job ends at its terminal time. A failed job runs to just before the next different
+    // job so the following job is not pulled in, with the latest node end plus a millisecond as the
+    // fallback when no following job bounds the window.
+    let end_us = match log.status {
+        LogStatus::Success => base_end,
+        _ => match next {
+            Some(n) => n - 1,
+            None => {
+                let cleanup = log
+                    .nodes
+                    .iter()
+                    .filter_map(|n| n.end)
+                    .map(|e| e.at_ms * 1000 + 1000)
+                    .max();
+                base_end.max(cleanup.unwrap_or(base_end))
+            }
+        },
+    };
+    let lo = raw_log.partition_point(|l| l.ts.epoch_us() < start_us);
+    let hi = raw_log.partition_point(|l| l.ts.epoch_us() <= end_us);
+    // A coordinator log whose end precedes its start would invert the bounds, so the upper bound is
+    // floored to the lower one, making an inverted window slice empty rather than panic.
+    let hi = hi.max(lo);
+    raw_log[lo..hi]
+        .iter()
+        .map(|l| LogEntry {
+            role: l.role.clone(),
+            time: l.ts.epoch_us() - start_us,
+            level: l.level.clone(),
+            msg: l.msg.clone(),
+        })
+        .collect()
 }
 
 /// Builds columnar telemetry, per-metric [gpu][tick] grids on one shared one-second axis.
 ///
 /// Every node aligns to the same axis anchored at the run epoch, where tick i is exactly i seconds
-/// after the epoch, so grids line up by index across nodes and against the block windows. A second a
-/// node did not sample stays null, a late start or interior gap, so the frontend renders a break
+/// after the epoch, so grids line up by index across nodes and against the block windows. A second
+/// a node did not sample stays null, a late start or interior gap, so the frontend renders a break
 /// there rather than pulling later readings onto collapsed seconds.
 fn build_telemetry(dmon: &BTreeMap<u32, Vec<DmonRow>>, t0: i64) -> Telemetry {
     let mut present: BTreeSet<&str> = BTreeSet::new();
@@ -390,8 +521,8 @@ fn build_telemetry(dmon: &BTreeMap<u32, Vec<DmonRow>>, t0: i64) -> Telemetry {
     Telemetry { metrics, nodes }
 }
 
-/// Builds the run statistics from the assembled blocks and telemetry. The per-node GPU rollup counts
-/// only clean blocks, so its averages read as normal proving load.
+/// Builds the run statistics from the assembled blocks and telemetry. The per-node GPU rollup
+/// counts only clean blocks, so its averages read as normal proving load.
 fn build_statistics(
     blocks: &[Block],
     logs: &[Log],
@@ -472,9 +603,9 @@ fn is_clean_block(log: &Log, node_ids: &[String]) -> bool {
             .all(|id| log.participants.iter().any(|p| p == id))
 }
 
-/// Computes a GPU rollup for one node from only the telemetry samples inside its proving windows, so
-/// the rollup reflects the GPU under proving load rather than the whole capture, where idle, warmup,
-/// and tail seconds would otherwise pull every average toward zero.
+/// Computes a GPU rollup for one node from only the telemetry samples inside its proving windows,
+/// so the rollup reflects the GPU under proving load rather than the whole capture, where idle,
+/// warmup, and tail seconds would otherwise pull every average toward zero.
 fn node_stats(rows: &[DmonRow], windows: &[(i64, i64)]) -> NodeStats {
     let proving: Vec<&DmonRow> = rows
         .iter()
@@ -530,9 +661,9 @@ fn job_prefix_matches(log_id: &str, job: &str) -> bool {
     !prefix.is_empty() && job.starts_with(&prefix)
 }
 
-/// Binds each metric block to the log that timed it, by index. Crashes bind first by the cluster job
-/// id in their reason, then successes bind to the latest success log finishing at or before their
-/// completion in a forward-only one-to-one scan. A block with no log is left unbound.
+/// Binds each metric block to the log that timed it, by index. Crashes bind first by the cluster
+/// job id in their reason, then successes bind to the latest success log finishing at or before
+/// their completion in a forward-only one-to-one scan. A block with no log is left unbound.
 fn match_blocks_to_logs(logs: &[Log], blocks: &[MetricBlock]) -> Vec<Option<usize>> {
     let mut by_metric: Vec<Option<usize>> = vec![None; blocks.len()];
     let mut used = vec![false; logs.len()];
@@ -552,8 +683,8 @@ fn match_blocks_to_logs(logs: &[Log], blocks: &[MetricBlock]) -> Vec<Option<usiz
     }
 
     // Second pass. A success binds to the latest success log finishing at or before its completion,
-    // a forward-only one-to-one scan. Only successes take this path, so a crash that found no job id
-    // stays unbound rather than stealing a success log by a near timestamp.
+    // a forward-only one-to-one scan. Only successes take this path, so a crash that found no job
+    // id stays unbound rather than stealing a success log by a near timestamp.
     let successes: Vec<usize> = logs
         .iter()
         .enumerate()
@@ -594,11 +725,12 @@ mod tests {
     use crate::parse_benchmark::{
         input::{
             dmon::DmonRow,
-            log::{Log, LogNode, LogStatus, Ts},
+            log::{Log, LogNode, LogStatus, NodeEnd, NodeEndKind, Ts, lines::RawLine},
             metrics::{MetricBlock, MetricStatus},
         },
         output::assemble::{
-            benchmark_id, match_blocks_to_logs, metric_cell, node_proving_windows, node_stats,
+            benchmark_name, block_logs, build_block, match_blocks_to_logs, metric_cell,
+            node_proving_windows, node_stats,
         },
     };
 
@@ -665,23 +797,6 @@ mod tests {
         assert_eq!(metric_cell(false, None), Value::Null);
     }
 
-    #[test]
-    fn benchmark_id_strips_a_trailing_timestamp() {
-        assert_eq!(
-            benchmark_id("mainnet-25192300-100-20260602-031552"),
-            "mainnet-25192300-100"
-        );
-        assert_eq!(benchmark_id("eest-60m-20260602-063136"), "eest-60m");
-    }
-
-    #[test]
-    fn benchmark_id_keeps_a_run_id_without_a_timestamp() {
-        // A bare basename with no -YYYYMMDD-HHMMSS suffix is the benchmark id verbatim, and a short
-        // trailing segment that is not a six-digit time is not mistaken for one.
-        assert_eq!(benchmark_id("fixture"), "fixture");
-        assert_eq!(benchmark_id("mainnet-25192300-100"), "mainnet-25192300-100");
-    }
-
     /// Builds a two-node job log with one phase window per node, for the clean-block window test.
     fn job(status: LogStatus, participants: &[&str], window: (i64, i64)) -> Log {
         let mut log = Log::new("job");
@@ -707,8 +822,9 @@ mod tests {
             job(LogStatus::Timeout, &["node1", "node2"], (500, 600)), // not a success, skipped
         ];
         let windows = node_proving_windows(&logs, &node_ids);
-        // Only the clean job's window survives for each node, so the rollup that filters telemetry to
-        // these windows averages normal proving rather than the degraded or aborted jobs.
+        // Only the clean job's window survives for each node, so the rollup that filters telemetry
+        // to these windows averages normal proving rather than the degraded or aborted
+        // jobs.
         assert_eq!(windows.get("node1"), Some(&vec![(100, 200)]));
         assert_eq!(windows.get("node2"), Some(&vec![(100, 200)]));
     }
@@ -800,5 +916,149 @@ mod tests {
         let blocks = vec![orphan];
         let matched = match_blocks_to_logs(&logs, &blocks);
         assert_eq!(matched, vec![None]);
+    }
+
+    #[test]
+    fn block_logs_stop_before_the_next_job() {
+        let at = |s: &str| Ts::parse(&format!("2026-01-01T00:00:{s}Z")).unwrap();
+        let line = |s: &str, msg: &str| RawLine {
+            role: "coordinator".to_string(),
+            ts: at(s),
+            level: "info".to_string(),
+            msg: msg.to_string(),
+        };
+        // Job A starts at :00. A node end that overshoots to :26 would otherwise pull in job B's
+        // :25.5 line, but the next job's :25 start caps the window short of it.
+        let mut a = Log::new("aaaaaaaa");
+        a.t_start = Some(at("00"));
+        a.t_end = Some(at("24"));
+        a.nodes = vec![LogNode {
+            id: "node1".to_string(),
+            phases: Vec::new(),
+            end: Some(NodeEnd {
+                at_ms: at("26").epoch_ms(),
+                kind: NodeEndKind::Crashed,
+            }),
+        }];
+        let raw = vec![
+            line("23", "A cleanup line"),
+            line("25.500000", "B job line"),
+        ];
+        let starts = vec![(at("25").epoch_us(), "bbbbbbbb".to_string())];
+        let out = block_logs(
+            Some(&a),
+            &raw,
+            at("00").epoch_ms(),
+            &crash_block("a", "x"),
+            &starts,
+        );
+        let msgs: Vec<&str> = out.iter().map(|e| e.msg.as_str()).collect();
+        assert_eq!(msgs, vec!["A cleanup line"]);
+    }
+
+    #[test]
+    fn block_logs_success_window_reaches_its_terminal_time() {
+        let at = |s: &str| Ts::parse(&format!("2026-01-01T00:00:{s}Z")).unwrap();
+        let line = |s: &str, msg: &str| RawLine {
+            role: "coordinator".to_string(),
+            ts: at(s),
+            level: "info".to_string(),
+            msg: msg.to_string(),
+        };
+        // A clean job whose terminal time at :24 exceeds a following job's :20 start is not
+        // truncated to that start, so its terminal line at :23 stays in the window.
+        let mut a = Log::new("aaaaaaaa");
+        a.status = LogStatus::Success;
+        a.t_start = Some(at("00"));
+        a.t_end = Some(at("24"));
+        let raw = vec![line("23", "A terminal line")];
+        let starts = vec![(at("20").epoch_us(), "bbbbbbbb".to_string())];
+        let out = block_logs(
+            Some(&a),
+            &raw,
+            at("00").epoch_ms(),
+            &success_block("a", "24"),
+            &starts,
+        );
+        let msgs: Vec<&str> = out.iter().map(|e| e.msg.as_str()).collect();
+        assert_eq!(msgs, vec!["A terminal line"]);
+    }
+
+    #[test]
+    fn block_logs_does_not_panic_on_inverted_window() {
+        let at = |s: &str| Ts::parse(&format!("2026-01-01T00:00:{s}Z")).unwrap();
+        let line = |s: &str, msg: &str| RawLine {
+            role: "coordinator".to_string(),
+            ts: at(s),
+            level: "info".to_string(),
+            msg: msg.to_string(),
+        };
+        // A coordinator log whose end precedes its start inverts the window bounds. The slice must
+        // be floored to empty rather than panic on a backwards range.
+        let mut a = Log::new("aaaaaaaa");
+        a.status = LogStatus::Success;
+        a.t_start = Some(at("10"));
+        a.t_end = Some(at("05"));
+        let raw = vec![line("07", "A line between the inverted bounds")];
+        let out = block_logs(
+            Some(&a),
+            &raw,
+            at("10").epoch_ms(),
+            &success_block("a", "05"),
+            &[],
+        );
+        assert!(out.is_empty(), "an inverted window yields no lines");
+    }
+
+    #[test]
+    fn crashed_offset_is_floored_to_zero_for_a_sub_start_end() {
+        let at = |s: &str| Ts::parse(&format!("2026-01-01T00:00:{s}Z")).unwrap();
+        // The coordinator started the job at :10 while node1's crash marker reads :05, earlier than
+        // the start from cross-host clock skew or a cancel logged before the Started line. The
+        // resulting offset must clamp to zero rather than render left of the time origin.
+        let mut log = Log::new("job");
+        log.status = LogStatus::Failed;
+        log.t_start = Some(at("10"));
+        log.participants = vec!["node1".to_string()];
+        log.nodes = vec![LogNode {
+            id: "node1".to_string(),
+            phases: vec![None],
+            end: Some(NodeEnd {
+                at_ms: at("05").epoch_ms(),
+                kind: NodeEndKind::Crashed,
+            }),
+        }];
+        let node_ids = vec!["node1".to_string()];
+        let block = build_block(
+            &crash_block("boom", "x"),
+            Some(&log),
+            &node_ids,
+            1,
+            at("10").epoch_ms(),
+            &[],
+            &[],
+        );
+        assert_eq!(block.nodes[0].crashed_ms, Some(0));
+        assert_eq!(block.nodes[0].crash_kind.as_deref(), Some("crashed"));
+    }
+
+    #[test]
+    fn benchmark_name_drops_a_trailing_timestamp() {
+        // The several timestamped runs of one benchmark share the name with the timestamp dropped,
+        // so a run directory without a benchmark.json still merges with its siblings.
+        assert_eq!(benchmark_name("eest-60m-20260602-000001"), "eest-60m");
+        assert_eq!(benchmark_name("eest-60m-20260602-000002"), "eest-60m");
+    }
+
+    #[test]
+    fn benchmark_name_keeps_a_run_id_without_a_timestamp() {
+        // A run id lacking the -YYYYMMDD-HHMMSS suffix is returned unchanged, so the fixture
+        // basename and a hand-named run keep their full id as the name.
+        assert_eq!(benchmark_name("fixture"), "fixture");
+        assert_eq!(benchmark_name("eest-60m-20260602"), "eest-60m-20260602");
+        assert_eq!(
+            benchmark_name("eest-60m-2026060-000001"),
+            "eest-60m-2026060-000001"
+        );
     }
 }

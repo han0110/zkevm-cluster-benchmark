@@ -47,15 +47,15 @@ export function ScatterLine({ blocks, cluster, registry, height = 360 }: Scatter
 
   const option = useMemo<EChartsCoreOption>(() => {
     const sp = registry.scatterPhase;
-    // The scatter-phase critical-path seconds per cluster block, looked up by block id.
+    // The scatter-phase critical-path seconds per cluster block, looked up by block name.
     const phaseSec = cluster.values[sp.name] ?? [];
-    const clusterIndex = new Map(cluster.blocks.map((b, i) => [b.id, i]));
+    const clusterIndex = new Map(cluster.blocks.map((b, i) => [b.name, i]));
     const rows = blocks.filter(p => p.status === 'success' && p.gas_used != null);
     const labels = rows.map(blockLabel);
     // Dimensions are gas (M), proving time (s), and the headline-phase share that drives the color.
     const data: Array<[number, number, number]> = rows.map(p => {
       const provingSec = msToSec(p.proving_ms ?? 0);
-      const ci = clusterIndex.get(p.id);
+      const ci = clusterIndex.get(p.name);
       const sec = ci != null ? (phaseSec[ci] ?? 0) : 0;
       const fraction = provingSec > 0 ? sec / provingSec : 0;
       return [(p.gas_used as number) / 1e6, provingSec, fraction];

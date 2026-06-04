@@ -104,9 +104,22 @@ export interface BlockMeta {
   steps?: number;
 }
 
+// One cluster-log line within a block's proving window, role-tagged and at an offset from the block
+// start, so the trace and the log console read on the same per-block time axis. Loaded on demand from
+// the block's sidecar log file, not carried inline in benchmark.json.
+export interface LogEntry {
+  role: string;
+  // Offset from the block start in microseconds, rendered to millisecond precision but sorted at full
+  // precision so lines that share a millisecond keep their order.
+  time: number;
+  level: string;
+  msg: string;
+}
+
 export interface Block {
-  // The proof identifier, the metric file name verbatim, possibly a long fixture id.
-  id: string;
+  // The block identifier, the metric file name verbatim, unique within a run and possibly a long
+  // fixture id.
+  name: string;
   status: BlockStatus;
   // Block start offset from the run epoch in milliseconds.
   start_ms: number;
@@ -145,6 +158,9 @@ export interface Benchmark {
   software: Software;
   // The benchmark identity shared by every run, unique among loaded documents.
   id: string;
+  // Human-facing name and description read from the run directory's input benchmark.json.
+  name: string;
+  description: string;
   // One entry per execution. A patch appends a run, so the newest is not necessarily the last.
   runs: Run[];
 }

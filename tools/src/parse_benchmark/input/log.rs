@@ -2,17 +2,13 @@
 //! into the [`Log`] model, one parsed log per proving job carrying only fields read from the logs.
 //! [`Ts`] wraps jiff as the crate's single timestamp parse and arithmetic point.
 
+pub mod lines;
 pub mod zkvm;
 
 use std::collections::BTreeMap;
 
 use jiff::Timestamp;
 use serde_json::Value;
-
-/// Converts a duration in seconds to whole milliseconds, rounding to the nearest.
-pub fn secs_to_ms(seconds: f64) -> i64 {
-    (seconds * 1000.0).round() as i64
-}
 
 /// Wraps a jiff Timestamp so the rest of the crate never depends on the jiff API directly.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -45,6 +41,13 @@ impl Ts {
     pub fn epoch_ms(self) -> i64 {
         self.0.as_millisecond()
     }
+
+    /// Returns the integer microseconds since the unix epoch, truncating sub-microsecond digits.
+    /// The log offsets are stored at this precision so lines within the same millisecond keep
+    /// their order.
+    pub fn epoch_us(self) -> i64 {
+        self.0.as_microsecond()
+    }
 }
 
 /// Terminal state a backend reported for a proving job, read from its log.
@@ -68,8 +71,8 @@ pub struct Log {
     pub meta: BTreeMap<String, Value>,
     pub nodes: Vec<LogNode>,
     /// Node ids that took part in this job, the union of every source that names a worker. A
-    /// hardware node absent from this list did not work the job, so the proof ran on fewer than the
-    /// full cluster.
+    /// hardware node absent from this list did not work the job, so the proof ran on fewer than
+    /// the full cluster.
     pub participants: Vec<String>,
 }
 
@@ -116,10 +119,10 @@ pub struct NodeEnd {
 
 /// One worker's contribution to a job, its phase windows aligned to the preset order.
 ///
-/// Entry i is the absolute (start, end) epoch-ms window for preset phase i, or None where the worker
-/// skipped it. The aggregator carries the cluster aggregate window in its final slot, which is how
-/// the assembler identifies it. On an incomplete job `end` marks where this node crashed or was
-/// cancelled, against which its in-progress phase is clipped.
+/// Entry i is the absolute (start, end) epoch-ms window for preset phase i, or None where the
+/// worker skipped it. The aggregator carries the cluster aggregate window in its final slot, which
+/// is how the assembler identifies it. On an incomplete job `end` marks where this node crashed or
+/// was cancelled, against which its in-progress phase is clipped.
 #[derive(Clone)]
 pub struct LogNode {
     pub id: String,

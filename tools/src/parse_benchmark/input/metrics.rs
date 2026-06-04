@@ -10,8 +10,7 @@ use std::{
     sync::LazyLock,
 };
 
-use crate::parse_benchmark::input::log::Ts;
-use crate::parse_benchmark::{io_at, json_at, read_dir_at, read_to_string_at};
+use crate::parse_benchmark::{input::log::Ts, io_at, json_at, read_dir_at, read_to_string_at};
 
 /// Terminal outcome a metric file reports for one proof.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

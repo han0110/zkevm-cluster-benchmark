@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "hardware": {
+    "cpu_model": "Test CPU",
+    "ram_gib": 128,
+    "gpu_models": ["Test GPU", "Test GPU", "Test GPU"],
+    "nodes": ["node1", "node2", "node3"]
+  },
+  "software": {
+    "zkvm": {
+      "name": "zisk",
+      "version": "v0.18.0",
+      "phases": [
+        { "name": "input", "label": "Input Transfer" },
+        { "name": "emulation", "label": "Emulation" },
+        { "name": "commit", "label": "Witgen + Commit" },
+        { "name": "prove", "label": "Prove + Recurse" },
+        { "name": "aggregate", "label": "Aggregate" }
+      ]
+    },
+    "guest": { "name": "reth", "version": "v2.1.0" }
+  },
+  "id": "test-bench",
+  "name": "Test Bench",
+  "description": "Two-run fixture covering the multi-run combine, a missing node, a crash, and a quoted id.",
+  "runs": [
+    {
+      "id": "test-bench-20260101-010000",
+      "started_at": 1000,
+      "block_count": 3,
+      "success_count": 2,
+      "failure_count": 1,
+      "statistics": {
+        "mean_proving_ms": 6000,
+        "p50_proving_ms": 6000,
+        "p90_proving_ms": 7000,
+        "p95_proving_ms": 7000,
+        "p99_proving_ms": 7000,
+        "mean_gas_per_s": 2500000,
+        "nodes": [
+          { "max_temp": 70, "temp_throttle_seconds": 0, "mean_sm": 95, "mean_mem": 60, "peak_rxpci": null, "peak_txpci": null },
+          { "max_temp": 71, "temp_throttle_seconds": 0, "mean_sm": 94, "mean_mem": 61, "peak_rxpci": null, "peak_txpci": null },
+          { "max_temp": 72, "temp_throttle_seconds": 0, "mean_sm": 93, "mean_mem": 62, "peak_rxpci": null, "peak_txpci": null }
+        ]
+      },
+      "blocks": [
+        {
+          "name": "0001",
+          "status": "success",
+          "start_ms": 0,
+          "gas_used": 10000000,
+          "proving_ms": 5000,
+          "proof_size": 200000,
+          "verification_time_ms": 5,
+          "meta": { "input_size": 1000000, "instances": 100, "steps": 100000000 },
+          "nodes": [
+            { "phases": [{ "start_ms": 0, "dur_ms": 50 }, { "start_ms": 50, "dur_ms": 1000 }, { "start_ms": 1050, "dur_ms": 1500 }, { "start_ms": 2550, "dur_ms": 2000 }, null], "crashed_ms": null, "crash_kind": null, "participated": true },
+            { "phases": [{ "start_ms": 0, "dur_ms": 50 }, { "start_ms": 50, "dur_ms": 1000 }, { "start_ms": 1050, "dur_ms": 1500 }, { "start_ms": 2550, "dur_ms": 2000 }, null], "crashed_ms": null, "crash_kind": null, "participated": true },
+            { "phases": [{ "start_ms": 0, "dur_ms": 50 }, { "start_ms": 50, "dur_ms": 1000 }, { "start_ms": 1050, "dur_ms": 1500 }, { "start_ms": 2550, "dur_ms": 2000 }, { "start_ms": 4550, "dur_ms": 400 }], "crashed_ms": null, "crash_kind": null, "participated": true }
+          ]
+        },
+        {
+          "name": "0002",
+          "status": "success",
+          "start_ms": 6000,
+          "gas_used": 20000000,
+          "proving_ms": 7000,
+          "proof_size": 250000,
+          "verification_time_ms": 6,
+          "meta": { "input_size": 1200000, "instances": 110, "steps": 120000000 },
+          "nodes": [
+            { "phases": [{ "start_ms": 0, "dur_ms": 60 }, { "start_ms": 60, "dur_ms": 1100 }, { "start_ms": 1160, "dur_ms": 1600 }, { "start_ms": 2760, "dur_ms": 2200 }, { "start_ms": 4960, "dur_ms": 420 }], "crashed_ms": null, "crash_kind": null, "participated": true },
+            { "phases": [{ "start_ms": 0, "dur_ms": 60 }, { "start_ms": 60, "dur_ms": 1100 }, { "start_ms": 1160, "dur_ms": 1600 }, { "start_ms": 2760, "dur_ms": 2200 }, null], "crashed_ms": null, "crash_kind": null, "participated": true },
+            { "phases": [null, null, null, null, null], "crashed_ms": null, "crash_kind": null, "participated": false }
+          ]
+        },
+        {
+          "name": "weird'id",
+          "status": "crashed",
+          "start_ms": 13000,
+          "gas_used": null,
+          "proving_ms": null,
+          "proof_size": null,
+          "verification_time_ms": null,
+          "meta": {},
+          "nodes": [
+            { "phases": [{ "start_ms": 0, "dur_ms": 55 }, { "start_ms": 55, "dur_ms": 900 }, null, null, null], "crashed_ms": null, "crash_kind": "cancelled", "participated": true },
+            { "phases": [{ "start_ms": 0, "dur_ms": 55 }, { "start_ms": 55, "dur_ms": 900 }, null, null, null], "crashed_ms": 1500, "crash_kind": "crashed", "participated": true },
+            { "phases": [{ "start_ms": 0, "dur_ms": 55 }, { "start_ms": 55, "dur_ms": 900 }, null, null, null], "crashed_ms": null, "crash_kind": "cancelled", "participated": true }
+          ]
+        }
+      ],
+      "telemetry": { "metrics": [], "nodes": [{ "metrics": {} }, { "metrics": {} }, { "metrics": {} }] }
+    },
+    {
+      "id": "test-bench-20260102-010000",
+      "started_at": 2000,
+      "block_count": 2,
+      "success_count": 2,
+      "failure_count": 0,
+      "statistics": {
+        "mean_proving_ms": 7250,
+        "p50_proving_ms": 7250,
+        "p90_proving_ms": 8000,
+        "p95_proving_ms": 8000,
+        "p99_proving_ms": 8000,
+        "mean_gas_per_s": 3000000,
+        "nodes": [
+          { "max_temp": 70, "temp_throttle_seconds": 0, "mean_sm": 95, "mean_mem": 60, "peak_rxpci": null, "peak_txpci": null },
+          { "max_temp": 71, "temp_throttle_seconds": 0, "mean_sm": 94, "mean_mem": 61, "peak_rxpci": null, "peak_txpci": null },
+          { "max_temp": 72, "temp_throttle_seconds": 0, "mean_sm": 93, "mean_mem": 62, "peak_rxpci": null, "peak_txpci": null }
+        ]
+      },
+      "blocks": [
+        {
+          "name": "0002",
+          "status": "success",
+          "start_ms": 0,
+          "gas_used": 20000000,
+          "proving_ms": 6500,
+          "proof_size": 250000,
+          "verification_time_ms": 6,
+          "meta": { "input_size": 1200000, "instances": 110, "steps": 120000000 },
+          "nodes": [
+            { "phases": [{ "start_ms": 0, "dur_ms": 60 }, { "start_ms": 60, "dur_ms": 1100 }, { "start_ms": 1160, "dur_ms": 1600 }, { "start_ms": 2760, "dur_ms": 2000 }, null], "crashed_ms": null, "crash_kind": null, "participated": true },
+            { "phases": [{ "start_ms": 0, "dur_ms": 60 }, { "start_ms": 60, "dur_ms": 1100 }, { "start_ms": 1160, "dur_ms": 1600 }, { "start_ms": 2760, "dur_ms": 2000 }, null], "crashed_ms": null, "crash_kind": null, "participated": true },
+            { "phases": [{ "start_ms": 0, "dur_ms": 60 }, { "start_ms": 60, "dur_ms": 1100 }, { "start_ms": 1160, "dur_ms": 1600 }, { "start_ms": 2760, "dur_ms": 2000 }, { "start_ms": 4760, "dur_ms": 420 }], "crashed_ms": null, "crash_kind": null, "participated": true }
+          ]
+        },
+        {
+          "name": "weird'id",
+          "status": "success",
+          "start_ms": 7000,
+          "gas_used": 30000000,
+          "proving_ms": 8000,
+          "proof_size": 300000,
+          "verification_time_ms": 7,
+          "meta": { "input_size": 1500000, "instances": 120, "steps": 150000000 },
+          "nodes": [
+            { "phases": [{ "start_ms": 0, "dur_ms": 70 }, { "start_ms": 70, "dur_ms": 1200 }, { "start_ms": 1270, "dur_ms": 1700 }, { "start_ms": 2970, "dur_ms": 2400 }, null], "crashed_ms": null, "crash_kind": null, "participated": true },
+            { "phases": [{ "start_ms": 0, "dur_ms": 70 }, { "start_ms": 70, "dur_ms": 1200 }, { "start_ms": 1270, "dur_ms": 1700 }, { "start_ms": 2970, "dur_ms": 2400 }, null], "crashed_ms": null, "crash_kind": null, "participated": true },
+            { "phases": [{ "start_ms": 0, "dur_ms": 70 }, { "start_ms": 70, "dur_ms": 1200 }, { "start_ms": 1270, "dur_ms": 1700 }, { "start_ms": 2970, "dur_ms": 2400 }, { "start_ms": 5370, "dur_ms": 450 }], "crashed_ms": null, "crash_kind": null, "participated": true }
+          ]
+        }
+      ],
+      "telemetry": { "metrics": [], "nodes": [{ "metrics": {} }, { "metrics": {} }, { "metrics": {} }] }
+    }
+  ]
+}

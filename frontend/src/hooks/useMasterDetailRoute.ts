@@ -1,15 +1,15 @@
 /*
- * Shared master-detail routing scaffold for the Proofs and Metrics pages, resolving a run and open item
+ * Shared master-detail routing scaffold for the Blocks and Metrics pages, resolving a run and open item
  * from the URL and returning the pieces both assemble into a table-and-detail split. The pages differ
- * only in item type, ordering, path naming, and base path. Keyboard and stale-item glue is in
- * useMasterDetailKeys.
+ * only in item type, ordering, path naming, and base path. A stale URL item redirects back to the list.
+ * Arrow-key stepping is separate, in useListArrowNav, because it follows the displayed set rather than
+ * the resolution set and each page builds its own per-item path.
  */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBench } from '@/hooks/useBench';
 import { useRunSearch } from '@/hooks/useRunSearch';
-import { useMasterDetailKeys } from '@/hooks/useMasterDetailKeys';
 import { runByIndex } from '@/utils/runs';
 import type { Benchmark, Run } from '@/types/benchmark';
 
@@ -28,14 +28,15 @@ interface MasterDetailRoute<T> {
   onClose: () => void;
 }
 
-// Resolves the run and open item, wiring arrow-key stepping and the stale-item redirect. The page passes
-// the URL item token, the ordered items, a function naming an item in the path, and its base path.
+// Resolves the run and open item and redirects a stale URL item back to the list. The page passes the
+// URL item token, the set the open item is matched against, a function naming an item, and its base path.
 export function useMasterDetailRoute<T>(params: {
   // Path segment naming the open item, undefined when the URL carries none.
   itemParam: string | undefined;
-  // Ordered items the arrow keys step through, also the set the open item is matched against.
+  // The set the open item is matched against, the whole run so an item the view filters out still
+  // resolves and stays open rather than redirecting away.
   items: T[];
-  // Stable identity of an item, matched against the URL token and used to build the path and row key.
+  // Stable identity of an item, matched against the URL token and used to build the active row key.
   idOf: (item: T) => string;
   // List path the close and stale redirects return to.
   basePath: string;
@@ -53,15 +54,27 @@ export function useMasterDetailRoute<T>(params: {
     [run, itemParam, items, idOf]
   );
 
-  const pathOf = useMemo(
-    () => (item: T) => (run ? `${basePath}/${runIndex}/${encodeURIComponent(idOf(item))}` : basePath),
-    [run, runIndex, basePath, idOf]
-  );
-
-  useMasterDetailKeys({ selected, hasParam: itemParam != null, basePath, items, pathOf });
+  // A path naming an item that no longer exists falls back to the closed list rather than a blank panel.
+  useEffect(() => {
+    if (itemParam != null && !selected) navigate({ pathname: basePath, search }, { replace: true });
+  }, [itemParam, selected, basePath, navigate, search]);
 
   const activeKey = run && selected ? `${runIndex}/${idOf(selected)}` : undefined;
   const onClose = useCallback(() => navigate({ pathname: basePath, search }), [navigate, basePath, search]);
+
+  // Escape closes the open detail. It rides on window, below the overlays that listen on document, and
+  // skips when one of them already handled the key (an open fullscreen trace, filter, or selector) or
+  // when a form control has focus, so it only closes the panel when nothing else claims the key.
+  useEffect(() => {
+    if (!selected) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (e.target instanceof HTMLElement && e.target.matches('input, textarea, select, [contenteditable]')) return;
+      onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selected, onClose]);
 
   return { run, runIndex, selected, search, activeKey, onClose };
 }

@@ -53,6 +53,22 @@ function copyBenchmarks(): Plugin {
   };
 }
 
+// Copies the gitignored data/log archive tree into dist at build time when present, since the .tar.gz
+// logs are fetched by URL and never enter the module graph. A build without the tree simply ships no
+// logs.
+function copyDataLogs(): Plugin {
+  return {
+    name: 'copy-data-logs',
+    apply: 'build',
+    closeBundle() {
+      const src = fileURLToPath(new URL('./data/log', import.meta.url));
+      if (!fs.existsSync(src)) return;
+      const dest = fileURLToPath(new URL('./dist/data/log', import.meta.url));
+      fs.cpSync(src, dest, { recursive: true });
+    },
+  };
+}
+
 // Copy dist/index.html to dist/404.html so a static host without history-API rewrite, such as GitHub
 // Pages, serves the SPA for a deep link instead of a not-found page, where the router then resolves it.
 function spaFallback(): Plugin {
@@ -74,7 +90,7 @@ export default defineConfig({
   // default serves the app at the domain root. A project deployed under a subpath sets this to that
   // subpath, for example /viewer/, and both the asset URLs and the router basename follow.
   base: '/',
-  plugins: [tailwindcss(), react(), serveBenchmarks(), copyBenchmarks(), spaFallback()],
+  plugins: [tailwindcss(), react(), serveBenchmarks(), copyBenchmarks(), copyDataLogs(), spaFallback()],
   resolve: {
     alias: { '@': path.resolve(fileURLToPath(new URL('./src', import.meta.url))) },
   },

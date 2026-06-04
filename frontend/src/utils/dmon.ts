@@ -1,6 +1,6 @@
 /*
  * GPU telemetry shaping for the columnar schema, zipping a [gpu][tick] grid into (offset-ms, value)
- * points on their true seconds. An unsampled second stays null so it is never read as a measured value.
+ * points on their true seconds.
  */
 
 import type { NodeTelemetry, Telemetry } from '@/types/benchmark';
@@ -12,7 +12,7 @@ export interface MetricPoint {
 }
 
 // Telemetry node grids keyed by node id, zipping the index-positioned grids against the hardware node
-// list into the by-id lookup the proof and node views read.
+// list into the by-id lookup the block and node views read.
 export const telemetryByNode = (nodes: string[], telemetry: Telemetry): Record<string, NodeTelemetry> =>
   Object.fromEntries(nodes.map((id, i) => [id, telemetry.nodes[i]])) as Record<string, NodeTelemetry>;
 

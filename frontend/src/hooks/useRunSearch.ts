@@ -1,6 +1,6 @@
 /* The active benchmark as a query string for links and redirects that keep it across views. The
  * benchmark is selected by its unique id in the `id` query parameter, distinct from the per-run run_id
- * in the proof and metric detail paths. */
+ * in the block and metric detail paths. */
 
 import { useSearchParams, type SetURLSearchParams } from 'react-router-dom';
 

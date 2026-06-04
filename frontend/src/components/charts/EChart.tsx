@@ -14,6 +14,7 @@ import {
   LegendComponent,
   DataZoomComponent,
   MarkAreaComponent,
+  MarkLineComponent,
   VisualMapComponent,
 } from 'echarts/components';
 import { LegacyGridContainLabel } from 'echarts/features';
@@ -31,6 +32,7 @@ echarts.use([
   LegendComponent,
   DataZoomComponent,
   MarkAreaComponent,
+  MarkLineComponent,
   VisualMapComponent,
   LegacyGridContainLabel,
   CanvasRenderer,

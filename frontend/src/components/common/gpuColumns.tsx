@@ -23,7 +23,7 @@ export interface RunTagged {
   runId: string;
 }
 
-// Run-index column shared by the Proofs and Metrics tables. Shows the run index (which sorts the rows)
+// Run-index column shared by the Blocks and Metrics tables. Shows the run index (which sorts the rows)
 // and carries the full run id on hover, so the two tables read the same. The caller supplies the header
 // so each table keeps its own label semantics.
 export function runColumn<R extends RunTagged>(): DataColumn<R> {

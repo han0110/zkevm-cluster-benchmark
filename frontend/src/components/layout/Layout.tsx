@@ -47,6 +47,7 @@ export function Layout() {
         title={APP_TITLE}
         runs={runs}
         selectedRunId={selected?.id ?? null}
+        selectedName={bench?.name ?? null}
         collapsed={collapsed}
         onToggle={() => setCollapsed(c => !c)}
       />
@@ -63,7 +64,7 @@ export function Layout() {
         )}
         {bench && (
           // Keyed per benchmark and per top-level section, not per full path, so navigating within
-          // proofs or within metrics updates the mounted view in place rather than remounting and
+          // blocks or within metrics updates the mounted view in place rather than remounting and
           // resetting scroll. resetKey still clears a caught error on any nav.
           <ErrorBoundary key={`${bench.id}-${location.pathname.split('/')[1] || 'root'}`} resetKey={location.pathname}>
             <div className="flex h-full min-h-0 flex-col gap-4">

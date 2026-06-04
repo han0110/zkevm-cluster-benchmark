@@ -53,10 +53,10 @@ static RE_P1_START: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
-/// Matches a phase1 per-worker finish line, capturing the phase, delay, and asm-execution seconds.
+/// Matches a phase1 per-worker finish line, read for the finishing worker.
 static RE_P1_DONE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r"^(?P<ts>\S+) INFO: \[Phase1\] WorkerId\((?P<worker>[^)]*)\) finished phase 1 for JobId\((?P<job>[^)]*)\) \(\d+\s*/\s*\d+ workers done, Phase: (?P<phase>[\d.]+)s, Delay: (?P<delay>[\d.]+)s, Witness: [\d.]+s, Asm Execution: (?P<asm>[\d.]+)s at [\d.]+ MHz\)",
+        r"^\S+ INFO: \[Phase1\] WorkerId\((?P<worker>[^)]*)\) finished phase 1 for JobId\((?P<job>[^)]*)\) \(\d+\s*/\s*\d+ workers done, Phase: [\d.]+s, Delay: [\d.]+s, Witness: [\d.]+s, Asm Execution: [\d.]+s at [\d.]+ MHz\)",
     )
     .unwrap()
 });
@@ -69,10 +69,10 @@ static RE_P2_START: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
-/// Matches a phase2 per-worker finish line, capturing the prove duration.
+/// Matches a phase2 per-worker finish line, read for the finishing worker.
 static RE_P2_DONE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r"^(?P<ts>\S+) INFO: \[Phase2\] WorkerId\((?P<worker>[^)]*)\) finished phase 2 for JobId\((?P<job>[^)]*)\) \(\d+\s*/\s*\d+ workers done, (?P<dur>[\d.]+)s\)",
+        r"^\S+ INFO: \[Phase2\] WorkerId\((?P<worker>[^)]*)\) finished phase 2 for JobId\((?P<job>[^)]*)\) \(\d+\s*/\s*\d+ workers done, [\d.]+s\)",
     )
     .unwrap()
 });
@@ -101,8 +101,8 @@ static RE_JOB_DONE: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
-/// Matches an ERROR or WARN job failure line carrying a timeout or failure keyword. The caller reads
-/// the keyword from the line itself to tell the two apart.
+/// Matches an ERROR or WARN job failure line carrying a timeout or failure keyword. The caller
+/// reads the keyword from the line itself to tell the two apart.
 static RE_JOB_FAILED: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(?P<ts>\S+) (?:ERROR|WARN): .*?JobId\((?P<job>[^)]*)\).*?(?:timed out|Failed)")
         .unwrap()
@@ -132,29 +132,11 @@ static RE_CANCEL_ACK: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
-/// Matches the [Job] contribution and prove-performance summary lines the benchmark extracts nothing
-/// from, so these recognized non-data lines do not fail the parse as uncovered [Job] lines.
+/// Matches the [Job] contribution and prove-performance summary lines the benchmark extracts
+/// nothing from, so these recognized non-data lines do not fail the parse as uncovered [Job] lines.
 static RE_JOB_INFO: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^\S+ INFO: \[Job\] (?:Contributions|Prove Performance)\b").unwrap()
 });
-
-/// One phase1 per-worker finish event, split later into the input, emulation, and commit windows.
-#[derive(Clone)]
-pub struct Phase1Event {
-    pub worker: String,
-    pub t_end: Ts,
-    pub phase_s: f64,
-    pub delay_s: f64,
-    pub asm_s: f64,
-}
-
-/// One phase2 per-worker finish event, carrying the prove duration.
-#[derive(Clone)]
-pub struct Phase2Event {
-    pub worker: String,
-    pub t_end: Ts,
-    pub dur_s: f64,
-}
 
 /// A zisk proving job as read from the coordinator log, before translation to the generic model.
 #[derive(Clone)]
@@ -170,8 +152,10 @@ pub struct RawJob {
     pub steps: Option<u64>,
     pub duration_s: Option<f64>,
     pub aggregator: Option<String>,
-    pub p1: Vec<Phase1Event>,
-    pub p2: Vec<Phase2Event>,
+    /// The workers that finished phase 1, each a node that took part in the job.
+    pub p1: Vec<String>,
+    /// The workers that finished phase 2, each a node that took part in the job.
+    pub p2: Vec<String>,
     /// Per-worker crash or cancel moments on an incomplete job, the end point each node's
     /// in-progress phase is clipped to. Empty on a clean job.
     pub node_ends: Vec<(String, Ts, NodeEndKind)>,
@@ -200,7 +184,8 @@ impl RawJob {
 }
 
 /// Tags whose lines carry no data the benchmark extracts, so they are skipped. Recovery lines trace
-/// a worker leaving and re-registering after a crash, already captured by the per-node crash marker.
+/// a worker leaving and re-registering after a crash, already captured by the per-node crash
+/// marker.
 const IGNORED_TAGS: [&str; 3] = ["Coordinator", "Setup", "Recovery"];
 
 /// Builds the fatal error for a tagged event line that matched no known pattern.
@@ -209,8 +194,8 @@ fn unrecognized(line: &str) -> crate::parse_benchmark::ParseError {
 }
 
 /// Parses coordinator log text into first-seen-ordered raw jobs. An INFO line with a data tag or
-/// brand-new tag matching no pattern is fatal, so a zisk log-format change is a fixable error rather
-/// than dropped data.
+/// brand-new tag matching no pattern is fatal, so a zisk log-format change is a fixable error
+/// rather than dropped data.
 pub fn parse(text: &str) -> crate::parse_benchmark::Result<Vec<RawJob>> {
     let clean = strip_ansi(text);
     let mut state = Coordinator::default();
@@ -248,14 +233,8 @@ impl Coordinator {
             // Started marks the job seen for ordering but yields no field.
             self.ensure(cap(&c, "job"));
         } else if let Some(c) = RE_P1_DONE.captures(raw) {
-            let ev = Phase1Event {
-                worker: cap(&c, "worker").to_string(),
-                t_end: Ts::parse(cap(&c, "ts"))?,
-                phase_s: capf(&c, "phase"),
-                delay_s: capf(&c, "delay"),
-                asm_s: capf(&c, "asm"),
-            };
-            self.ensure(cap(&c, "job")).p1.push(ev);
+            let worker = cap(&c, "worker").to_string();
+            self.ensure(cap(&c, "job")).p1.push(worker);
         } else {
             return Err(unrecognized(raw));
         }
@@ -268,12 +247,8 @@ impl Coordinator {
             // Started marks the job seen for ordering but yields no field.
             self.ensure(cap(&c, "job"));
         } else if let Some(c) = RE_P2_DONE.captures(raw) {
-            let ev = Phase2Event {
-                worker: cap(&c, "worker").to_string(),
-                t_end: Ts::parse(cap(&c, "ts"))?,
-                dur_s: capf(&c, "dur"),
-            };
-            self.ensure(cap(&c, "job")).p2.push(ev);
+            let worker = cap(&c, "worker").to_string();
+            self.ensure(cap(&c, "job")).p2.push(worker);
         } else {
             return Err(unrecognized(raw));
         }
@@ -339,7 +314,8 @@ impl Coordinator {
             };
             self.record_failure(cap(&c, "job"), cap(&c, "ts"), status)?;
         } else if let Some(c) = RE_JOB_FAILED_LINE.captures(raw) {
-            // The cluster's terminal failure line with verb before id, never emitted by a finished job.
+            // The cluster's terminal failure line with verb before id, never emitted by a finished
+            // job.
             self.record_failure(cap(&c, "job"), cap(&c, "ts"), LogStatus::Failed)?;
         }
         Ok(())
@@ -456,14 +432,10 @@ mod tests {
         assert!(j.t_p3_start.is_some() && j.t_p3_end.is_some());
 
         assert_eq!(j.p1.len(), 1);
-        assert_eq!(j.p1[0].worker, "node4");
-        assert_eq!(j.p1[0].phase_s, 2.947);
-        assert_eq!(j.p1[0].delay_s, 0.057);
-        assert_eq!(j.p1[0].asm_s, 0.636);
+        assert_eq!(j.p1[0], "node4");
 
         assert_eq!(j.p2.len(), 1);
-        assert_eq!(j.p2[0].worker, "node3");
-        assert_eq!(j.p2[0].dur_s, 3.269);
+        assert_eq!(j.p2[0], "node3");
     }
 
     #[test]
@@ -472,8 +444,7 @@ mod tests {
             "2026-05-29T09:53:15.821558Z INFO: [Phase2] WorkerId(node3) finished phase 2 for JobId(JOBA) (1 / 4 workers done, 3.269s)",
         );
         assert_eq!(j.p2.len(), 1);
-        assert_eq!(j.p2[0].worker, "node3");
-        assert_eq!(j.p2[0].dur_s, 3.269);
+        assert_eq!(j.p2[0], "node3");
     }
 
     #[test]

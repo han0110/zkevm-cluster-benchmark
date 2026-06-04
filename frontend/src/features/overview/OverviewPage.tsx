@@ -6,10 +6,14 @@
 
 import { useMemo } from 'react';
 import { useBench } from '@/hooks/useBench';
+import { usePersistentState } from '@/hooks/usePersistentState';
+import { cx } from '@/utils/cx';
+import { ACTIVE_ACCENT, FOCUS_RING, PILL, PILL_IDLE } from '@/utils/styles';
 import { StatStrip, type StatItem } from '@/components/common/StatStrip';
 import { HardwareTable } from '@/components/common/HardwareTable';
-import { ChartCard } from '@/components/common/ChartCard';
+import { ChartPanel } from '@/components/common/ChartPanel';
 import { ChartSection } from '@/components/common/ChartSection';
+import { SectionHeading } from '@/components/common/SectionHeading';
 import { ScatterLine } from '@/components/charts/ScatterLine';
 import { ProvingTimeHistogram } from '@/components/charts/ProvingTimeHistogram';
 import { PhaseBreakdownChart, type PhaseBreakdownRow } from '@/components/charts/PhaseBreakdownChart';
@@ -35,6 +39,15 @@ export function OverviewPage() {
   const cluster = clusterPhaseSeries(blocks, registry);
   const buckets = provingTimeBuckets(blocks);
 
+  // The per-block phase chart can order blocks by proving time instead of by name, a tab the reader
+  // cycles. Sorting by time is ascending, so the slowest block lands on the right.
+  const [sortByTime, setSortByTime] = usePersistentState('overview-phase-sort-by-time', false);
+  const phaseChartBlocks = useMemo(
+    () => (sortByTime ? [...blocks].sort((a, b) => (a.proving_ms ?? 0) - (b.proving_ms ?? 0)) : blocks),
+    [blocks, sortByTime]
+  );
+  const phaseChart = useMemo(() => clusterPhaseSeries(phaseChartBlocks, registry), [phaseChartBlocks, registry]);
+
   // One breakdown row for every block, then one per non-empty proving-time bucket from fastest to slowest.
   const allBlocks: PhaseBreakdownRow = { label: 'All blocks', ...meanClusterPhases(blocks, registry) };
   const bucketRows: PhaseBreakdownRow[] = buckets.byBucket.flatMap((ps, i) =>
@@ -52,13 +65,16 @@ export function OverviewPage() {
   ];
 
   const failed = summary.count - summary.success;
-  const stats: StatItem[] = [
+  const benchmarkItems: StatItem[] = [
+    { label: 'Name', value: data.name || data.id },
+    { label: 'Description', value: data.description || '-' },
+    { label: 'Benchmark At', value: benchmarkTime(startedAt) },
     { label: 'Proofs', value: `${summary.success}/${summary.count}${failed ? ` (${failed} failed)` : ''}` },
-    { label: 'Throughput', value: dash(summary.gasPerSecond, g => `${formatCompact(g)} gas/s`) },
-    { label: 'Time (mean / median)', value: `${formatMsSeconds(summary.meanMs)} / ${formatMsSeconds(summary.p50Ms)}` },
+    { label: 'Mean Throughput', value: dash(summary.gasPerSecond, g => `${formatCompact(g)} gas/s`) },
+    { label: 'Mean Time', value: formatMsSeconds(summary.meanMs) },
     {
-      label: 'Time (p90 / p95 / p99)',
-      value: `${formatMsSeconds(summary.p90Ms)} / ${formatMsSeconds(summary.p95Ms)} / ${formatMsSeconds(summary.p99Ms)}`,
+      label: 'Time (P50 / P90 / P95 / P99)',
+      value: `${formatMsSeconds(summary.p50Ms)} / ${formatMsSeconds(summary.p90Ms)} / ${formatMsSeconds(summary.p95Ms)} / ${formatMsSeconds(summary.p99Ms)}`,
     },
   ];
 
@@ -72,33 +88,41 @@ export function OverviewPage() {
         <StatStrip items={softwareItems} />
       </ChartSection>
 
-      <ChartSection title="Proof" subtitle={`Benchmark at ${benchmarkTime(startedAt)}`}>
-        <StatStrip items={stats} />
-      </ChartSection>
+      {/* The Benchmark group, a stat strip of identity figures above its chart panels, the panels
+          padded apart so the section reads like a Grafana row of panels under one group. */}
+      <section className="flex flex-col gap-4">
+        <SectionHeading>Benchmark</SectionHeading>
+        <StatStrip items={benchmarkItems} />
 
-      <ChartSection title="Proving time distribution">
-        <ChartCard>
+        <ChartPanel title="Proving time distribution">
           <ProvingTimeHistogram labels={buckets.labels} counts={buckets.counts} bucketS={buckets.bucketS} />
-        </ChartCard>
-      </ChartSection>
+        </ChartPanel>
 
-      <ChartSection title="Phase breakdown">
-        <ChartCard>
+        <ChartPanel title="Phase breakdown">
           <PhaseBreakdownChart rows={phaseRows} registry={registry} />
-        </ChartCard>
-      </ChartSection>
+        </ChartPanel>
 
-      <ChartSection title="Phase breakdown per block" subtitle="Each phase ends when the last node finishes it.">
-        <ChartCard>
-          <PhaseTimingChart labels={cluster.labels} values={cluster.values} registry={registry} total={cluster.total} />
-        </ChartCard>
-      </ChartSection>
+        <ChartPanel
+          title="Phase breakdown per block"
+          subtitle="Each phase ends when the last node finishes it."
+          action={
+            <button
+              type="button"
+              onClick={() => setSortByTime(v => !v)}
+              aria-pressed={sortByTime}
+              className={cx(PILL, FOCUS_RING, sortByTime ? ACTIVE_ACCENT : PILL_IDLE)}
+            >
+              {sortByTime ? 'Sort by time' : 'Sort by name'}
+            </button>
+          }
+        >
+          <PhaseTimingChart labels={phaseChart.labels} values={phaseChart.values} registry={registry} total={phaseChart.total} />
+        </ChartPanel>
 
-      <ChartSection title="Gas used vs proving time">
-        <ChartCard>
+        <ChartPanel title="Gas used vs proving time">
           <ScatterLine blocks={blocks} cluster={cluster} registry={registry} height={300} />
-        </ChartCard>
-      </ChartSection>
+        </ChartPanel>
+      </section>
     </div>
   );
 }

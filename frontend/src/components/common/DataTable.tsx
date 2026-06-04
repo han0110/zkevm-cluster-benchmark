@@ -5,11 +5,11 @@
  * matches ChartCard so a table drops straight into a ChartSection without a card.
  */
 
-import { memo, useMemo, useRef, useState, type ReactNode } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { cx } from '@/utils/cx';
 import { useColumnSizing } from '@/hooks/useColumnSizing';
 import { useVirtualRows } from '@/hooks/useVirtualRows';
-import { FOCUS_RING, OVERLINE, SURFACE } from '@/utils/styles';
+import { FOCUS_RING, OVERLINE, ROW_ACTIVE, ROW_BASE, ROW_IDLE, SURFACE } from '@/utils/styles';
 
 export interface DataColumn<T> {
   key: string;
@@ -35,12 +35,16 @@ interface DataTableProps<T> {
   activeRowKey?: string;
   className?: string;
   // When set, columns become drag-resizable and their widths persist in localStorage under this id.
-  // Tables sharing an id share widths, so scope the id (such as `proofs:${runId}`) to keep widths
+  // Tables sharing an id share widths, so scope the id (such as `blocks:${runId}`) to keep widths
   // separate per run. Omit it to keep the natural, non-resizable layout.
   tableId?: string;
+  // Called with the rows in their displayed order whenever the filter or active sort changes, so a
+  // master-detail page can step its arrow-key navigation through what the reader actually sees rather
+  // than the source order. Pass a stable callback so the notification fires only on a real reorder.
+  onVisibleRowsChange?: (rows: T[]) => void;
 }
 
-export function DataTable<T>({ columns, rows, rowKey, initialSort, activeRowKey, className, tableId }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, initialSort, activeRowKey, className, tableId, onVisibleRowsChange }: DataTableProps<T>) {
   const [sort, setSort] = useState<{ key: string; dir: SortDir } | null>(initialSort ?? null);
   const tableRef = useRef<HTMLTableElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -66,6 +70,12 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, activeRowKey,
     });
   }, [rows, columns, sort]);
 
+  // Report the displayed order to a master-detail owner so its arrow keys step the visible set. Fires
+  // only when the sorted-and-filtered rows actually change, since `sorted` is memoized.
+  useEffect(() => {
+    onVisibleRowsChange?.(sorted);
+  }, [sorted, onVisibleRowsChange]);
+
   const toggleSort = (column: DataColumn<T>): void => {
     if (!column.sortValue) return;
     setSort(prev =>
@@ -79,6 +89,39 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, activeRowKey,
   // per-node and hardware tables keep their exact layout. The scroll container is this wrapper.
   const win = useVirtualRows(scrollRef, sorted.length);
   const visible = win.enabled ? sorted.slice(win.start, win.end) : sorted;
+
+  // Index of the active row within the displayed order, recomputed whenever the sort or the rows move it.
+  // A re-sort or a new rows prop that relocates the open row changes this index even when the active key
+  // is unchanged, so it drives the keep-in-view effect alongside the key itself.
+  const activeIndex = useMemo(
+    () => (activeRowKey == null ? -1 : sorted.findIndex(row => rowKey(row) === activeRowKey)),
+    [sorted, activeRowKey, rowKey]
+  );
+
+  // Keep the active row in view when it changes or a reorder relocates it, so stepping the open row with
+  // the arrow keys or re-sorting the table never leaves the cursor on a row scrolled out of sight. The
+  // effect tracks both the active key and its index in the displayed order, so a plain selection change
+  // and a reorder that moves the same row both re-scroll, while an unchanged key at an unchanged index
+  // is a no-op so it never fights the reader's own scrolling. scrollIntoView with block:'nearest' and
+  // win.scrollToIndex already do nothing when the row is visible.
+  const prevScrollRef = useRef<{ key: string; index: number } | null>(null);
+  useEffect(() => {
+    if (activeRowKey == null || activeIndex < 0) {
+      prevScrollRef.current = null;
+      return;
+    }
+    const prev = prevScrollRef.current;
+    if (prev && prev.key === activeRowKey && prev.index === activeIndex) return;
+    prevScrollRef.current = { key: activeRowKey, index: activeIndex };
+    if (win.enabled) {
+      win.scrollToIndex(activeIndex);
+    } else {
+      scrollRef.current?.querySelector('[data-active-row]')?.scrollIntoView({ block: 'nearest' });
+    }
+    // The active key and its displayed index are the triggers. The rest are read fresh from the render
+    // they changed in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeRowKey, activeIndex]);
 
   return (
     <div ref={scrollRef} className={cx('overflow-x-auto', SURFACE, className)}>
@@ -95,6 +138,12 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, activeRowKey,
             {columns.map(column => (
               <col key={column.key} style={{ width: sizing.widths![column.key] }} />
             ))}
+            {/* Auto-width spacer column. When the summed column widths fall short of the container, fixed
+                table layout would otherwise restretch every column to fill the full-width floor, so a drag
+                appeared to resize them all. This column absorbs that slack instead, so a drag changes only
+                the dragged column and, at most, this spacer. It collapses to zero once the table overflows
+                and the wrapper scrolls. */}
+            <col aria-hidden="true" />
           </colgroup>
         )}
         <thead className="sticky top-0 z-10 bg-surface">
@@ -157,6 +206,8 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, activeRowKey,
                 </th>
               );
             })}
+            {/* Header cell for the slack-absorbing spacer column, never resizable. */}
+            {fixed && <th aria-hidden="true" className="p-0" />}
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -164,7 +215,7 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, activeRowKey,
               so the scrollbar and position match the full row count. */}
           {win.padTop > 0 && (
             <tr aria-hidden="true">
-              <td colSpan={columns.length} style={{ height: win.padTop, padding: 0, border: 0 }} />
+              <td colSpan={fixed ? columns.length + 1 : columns.length} style={{ height: win.padTop, padding: 0, border: 0 }} />
             </tr>
           )}
           {visible.map(row => {
@@ -181,7 +232,7 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, activeRowKey,
           })}
           {win.padBottom > 0 && (
             <tr aria-hidden="true">
-              <td colSpan={columns.length} style={{ height: win.padBottom, padding: 0, border: 0 }} />
+              <td colSpan={fixed ? columns.length + 1 : columns.length} style={{ height: win.padBottom, padding: 0, border: 0 }} />
             </tr>
           )}
         </tbody>
@@ -190,10 +241,8 @@ export function DataTable<T>({ columns, rows, rowKey, initialSort, activeRowKey,
   );
 }
 
-// One row through memo so an unrelated state change re-renders only the rows whose own inputs changed.
-// With the caller holding the row and column arrays stable, flipping the active highlight when a detail
-// opens re-renders the two affected rows not the whole body, keeping opening a proof cheap on a table of
-// thousands of rows.
+// Memoized so flipping the active highlight re-renders only the affected rows, not the whole body, on a
+// table of thousands of rows.
 function DataTableRowInner<T>({
   row,
   columns,
@@ -208,12 +257,15 @@ function DataTableRowInner<T>({
   return (
     <tr
       data-row=""
+      data-active-row={active ? '' : undefined}
       className={cx(
-        // Explicit grey border on every row so the divide-y line a row gains when it leaves first position
-        // does not animate from inherited currentColor (near-white) down to grey under transition-colors
-        // on re-sort.
-        'border-border text-foreground transition-colors hover:bg-elevated/40',
-        active && 'bg-primary/10'
+        // ROW_BASE carries the explicit grey border on every row so the divide-y line a row gains when it
+        // leaves first position does not animate from inherited currentColor (near-white) down to grey
+        // under transition-colors on re-sort. ROW_ACTIVE keeps the selected row's highlight under the
+        // cursor, deepening rather than switching to the grey ROW_IDLE hover tint, so the open row never
+        // reads as deselected while hovered.
+        ROW_BASE,
+        active ? ROW_ACTIVE : ROW_IDLE
       )}
     >
       {columns.map(column => (
@@ -230,10 +282,11 @@ function DataTableRowInner<T>({
           {column.render(row)}
         </td>
       ))}
+      {/* Filler cell under the slack-absorbing spacer column, so its width is the table's free space. */}
+      {fixed && <td aria-hidden="true" className="p-0" />}
     </tr>
   );
 }
 
-// memo carries the generic call signature through the cast so the row keeps its typed props while
-// skipping a re-render when its row, columns, active flag, and fixed flag are all unchanged.
+// Cast preserves the generic call signature through memo so the row keeps its typed props.
 const DataTableRow = memo(DataTableRowInner) as typeof DataTableRowInner;
