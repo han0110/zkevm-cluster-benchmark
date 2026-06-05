@@ -23,13 +23,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-
+      # Nightly is installed first and stable last so stable stays the default toolchain for build,
+      # clippy, and test. Only the format check opts into nightly, which the rustfmt.toml unstable
+      # options require. Keep stable last or clippy runs on nightly, where its component is absent.
       - uses: dtolnay/rust-toolchain@nightly
         with:
           components: rustfmt
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
 
       - uses: Swatinem/rust-cache@v2
         with:
