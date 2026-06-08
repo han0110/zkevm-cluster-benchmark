@@ -59,9 +59,11 @@ function firstFileBytes(tar: Uint8Array): Uint8Array {
 
 // Decompresses a block's gzipped-tar log archive and parses its single JSON member into log entries.
 // The bytes are gunzipped only when they still carry the gzip magic number, since a transport that
-// already inflated them, such as a dev server serving the .gz with Content-Encoding: gzip, leaves the
-// bare tar. Bytes that are not a tar archive return null, marking the logs absent. A valid archive whose
-// member is an empty array stays an empty log, distinct from that absent case.
+// already inflated them, such as one that applied a gzip Content-Encoding, leaves the bare tar. The
+// .tar.json suffix the file ships under keeps a static host from inferring that encoding, so in practice
+// the bytes arrive gzipped and are decompressed here. Bytes that are not a tar archive return null,
+// marking the logs absent. A valid archive whose member is an empty array stays an empty log, distinct
+// from that absent case.
 export function decodeLogArchive(buffer: ArrayBuffer): LogEntry[] | null {
   const bytes = new Uint8Array(buffer);
   const tar = bytes[0] === 0x1f && bytes[1] === 0x8b ? gunzipSync(bytes) : bytes;

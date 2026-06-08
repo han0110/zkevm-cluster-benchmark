@@ -1,9 +1,10 @@
 /*
  * Fullscreen overlay of a block's trace above its log console. The block's log lines load on demand
- * from a per-block tar.gz archive, fetched and untarred in the browser, so benchmark.json stays lean
- * and the bulky DEBUG-level logs travel only when a trace is opened. Hovering a log line marks its
- * moment on the trace with a dashed cursor. The overlay floats over the page and dismisses on the
- * close control, a press on the backdrop, or Escape.
+ * from a per-block tar.json archive, fetched and untarred in the browser, so benchmark.json stays lean
+ * and the bulky DEBUG-level logs travel only when a trace is opened. A build-time index records which
+ * blocks ship an archive, so a block the build bundled no logs for is reported absent without any
+ * network request. Hovering a log line marks its moment on the trace with a dashed cursor. The overlay
+ * floats over the page and dismisses on the close control, a press on the backdrop, or Escape.
  */
 
 import { useCallback, useEffect, useMemo, useState, memo } from 'react';
@@ -11,68 +12,16 @@ import { BlockTrace } from '@/features/blocks/BlockTrace';
 import { BlockLogConsole } from '@/features/blocks/BlockLogConsole';
 import { Modal } from '@/components/common/Modal';
 import { EmptyState } from '@/components/common/EmptyState';
-import { decodeLogArchive } from '@/utils/logArchive';
-import { blockArchivePath } from '@/utils/archivePath';
+import { useBlockLogs, EMPTY_LOGS } from '@/features/blocks/useBlockLogs';
 import { microsToSeconds } from '@/utils/format';
 import type { PhaseRegistry } from '@/utils/phases';
-import type { Block, LogEntry } from '@/types/benchmark';
-
-// Base URL the per-block log archives are served from under the local data directory, with the
-// trailing slash trimmed so the path joins cleanly.
-const LOG_BASE = `${import.meta.env.BASE_URL}data/log`.replace(/\/+$/, '');
-
-const archiveUrl = (benchId: string, runId: string, blockName: string): string =>
-  `${LOG_BASE}/${benchId}/${runId}/${blockArchivePath(blockName)}.tar.gz`;
-
-// The load outcome of a block's log archive. It is still loading, ready with its lines (possibly an
-// empty archive), absent because this build bundled no archive for the block, or a genuine fetch or
-// decode failure.
-type LogsState =
-  | { status: 'loading' }
-  | { status: 'ready'; logs: LogEntry[] }
-  | { status: 'absent' }
-  | { status: 'error'; error: string };
-
-// Statuses that mean the archive is simply absent, so this build did not bundle the block's logs. A
-// static host returns 404 for a missing file. The values 403 and 410 are tolerated as the same absence.
-const ABSENT_STATUS = new Set([403, 404, 410]);
-
-// A stable empty list for the non-ready states, so a fresh array literal never remounts the console and
-// the reader's filter selection carries across blocks.
-const EMPTY_LOGS: LogEntry[] = [];
+import type { Block } from '@/types/benchmark';
 
 // The log console memoized at module scope so a cursor hover, which re-renders the overlay to move the
 // trace cursor, does not re-render the heavy windowed log list when its props are unchanged. The hover
 // callback and the logs and empty values are kept referentially stable across cursor changes so this
 // memo holds.
 const LogConsole = memo(BlockLogConsole);
-
-// Fetches a block's log archive on demand and untars it. An archive that is missing by status, or a
-// response that is not an archive at all, reads as the logs being unavailable in this build rather than
-// an error or an empty console.
-function useBlockLogs(benchId: string, runId: string, blockName: string): LogsState {
-  const [state, setState] = useState<LogsState>({ status: 'loading' });
-  useEffect(() => {
-    const controller = new AbortController();
-    setState({ status: 'loading' });
-    fetch(archiveUrl(benchId, runId, blockName), { signal: controller.signal })
-      .then(res => {
-        if (ABSENT_STATUS.has(res.status)) return null;
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        return res.arrayBuffer();
-      })
-      .then(buffer => {
-        const logs = buffer === null ? null : decodeLogArchive(buffer);
-        setState(logs === null ? { status: 'absent' } : { status: 'ready', logs });
-      })
-      .catch((err: unknown) => {
-        if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return;
-        setState({ status: 'error', error: err instanceof Error ? err.message : String(err) });
-      });
-    return () => controller.abort();
-  }, [benchId, runId, blockName]);
-  return state;
-}
 
 export function BlockTraceFullscreen({
   benchId,

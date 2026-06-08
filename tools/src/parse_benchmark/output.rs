@@ -37,10 +37,13 @@ pub fn write(benchmark: &Benchmark, output: &Path) -> crate::parse_benchmark::Re
     std::fs::write(output, text).map_err(io_at(output))
 }
 
-/// Writes each block's logs to a per-block tar.gz under log/{bench_id}/{run_id}/ beside
+/// Writes each block's logs to a per-block tar.json under log/{bench_id}/{run_id}/ beside
 /// benchmark.json, so the lean document stays small and a block's log loads only when its trace is
-/// opened. The benchmark id namespaces the tree. A block with no logs writes no file. The directory
-/// is gitignored and uploaded to Cloudflare R2 for production.
+/// opened. The file is a gzipped tar carrying a .tar.json suffix rather than .tar.gz so a static
+/// host serves it without a gzip Content-Encoding the browser would transparently inflate, leaving
+/// the in-browser reader to decompress the bytes itself. The benchmark id namespaces the tree. A
+/// block with no logs writes no file, and the frontend's build-time index skips fetching the absent
+/// ones. The directory is gitignored and uploaded to Cloudflare R2 for production.
 pub fn write_block_logs(
     run: &schema::Run,
     base_dir: &Path,
@@ -56,9 +59,10 @@ pub fn write_block_logs(
             std::fs::create_dir_all(&dir).map_err(io_at(&dir))?;
             created = true;
         }
-        let path = dir.join(format!("{}.tar.gz", archive_stem(&block.name)));
-        // A block whose stem nests under a subdirectory needs that subdirectory, so the file's own
-        // parent is ensured rather than only the run directory.
+        let path = dir.join(format!("{}.tar.json", archive_stem(&block.name)));
+        // The stem is a flat file name, so its parent is normally the run directory. This guards
+        // the unlikely case of a block name carrying a raw path separator, ensuring that
+        // parent rather than failing the write.
         if let Some(parent) = path.parent()
             && parent != dir
         {
@@ -70,12 +74,17 @@ pub fn write_block_logs(
     Ok(())
 }
 
-/// Maps a block name to its archive path stem, turning the `::` of an EEST test id into a path
-/// separator so the colon never reaches a URL a static origin must serve. This mapping must stay in
-/// sync with the URL side in frontend/src/features/blocks/BlockTraceFullscreen.tsx archivePath,
-/// which splits the same name on `::` and rejoins with a slash so both sides address the same file.
+/// Maps a block name to its flat archive file stem, replacing the `::` of an EEST test id with a
+/// double underscore so every block's archive sits directly under log/{bench_id}/{run_id}/ as a
+/// single file rather than nesting under a per-test-file subdirectory. The colon is replaced rather
+/// than left in place because a colon in a served path is not matched by the dev server or a static
+/// origin, which fall through to the SPA HTML fallback; brackets and spaces serve fine
+/// percent-encoded. This mapping must stay in sync with blockArchivePath in
+/// frontend/src/utils/archivePath.ts and the per-segment scan in the logArchiveIndex Vite plugin
+/// (frontend/vite/logArchiveIndex.ts), which replace the same `::` so all three address the same
+/// file.
 fn archive_stem(name: &str) -> String {
-    name.replace("::", "/")
+    name.replace("::", "__")
 }
 
 /// Writes the block's log JSON as a single-member gzipped tar at the path. The member is named
@@ -102,17 +111,21 @@ mod tests {
     use crate::parse_benchmark::output::archive_stem;
 
     #[test]
-    fn archive_stem_maps_an_eest_id_to_a_path() {
-        // An EEST test id carries a `::` between its file and test, which the stem turns into a
-        // path separator while leaving the bracketed parameters intact, matching the
-        // frontend URL side.
+    fn archive_stem_flattens_an_eest_id() {
+        // An EEST test id carries a `::` between its file and test, which the stem replaces with a
+        // double underscore so the archive is one flat file under the run directory, leaving the
+        // bracketed parameters intact and never introducing a path separator.
         let name = "test_account_query.py::test_codecopy_benchmark[fork_Osaka-blockchain_test-code_size_0-mem_size_0-benchmark-gas-value_60M]";
         let stem = archive_stem(name);
         assert_eq!(
             stem,
-            "test_account_query.py/test_codecopy_benchmark[fork_Osaka-blockchain_test-code_size_0-mem_size_0-benchmark-gas-value_60M]"
+            "test_account_query.py__test_codecopy_benchmark[fork_Osaka-blockchain_test-code_size_0-mem_size_0-benchmark-gas-value_60M]"
         );
         assert!(!stem.contains("::"), "the colon pair must not survive");
+        assert!(
+            !stem.contains('/'),
+            "the stem stays a single flat file name"
+        );
         assert!(stem.contains('['), "the bracketed parameters are preserved");
         assert!(stem.contains(']'), "the bracketed parameters are preserved");
     }

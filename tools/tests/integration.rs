@@ -341,14 +341,15 @@ fn writes_lean_document_with_sidecar_per_block_log_files() {
         "benchmark.json carries no inline logs"
     );
 
-    // Each block's logs land in a per-block tar.gz under log/{bench_id}/{run_id}/ named by the
-    // block, holding the role, time, level, and message of each kept line. The fixture's bench
-    // id and run id are both "fixture", and the block name is verbatim.
+    // Each block's logs land in a per-block tar.json under log/{bench_id}/{run_id}/ named by the
+    // block, holding the role, time, level, and message of each kept line. The file is a gzipped
+    // tar carrying a .tar.json suffix. The fixture's bench id and run id are both "fixture",
+    // and the block name is verbatim.
     let log_file = dir
         .join("log")
         .join("fixture")
         .join("fixture")
-        .join("rpc_block_25192300.tar.gz");
+        .join("rpc_block_25192300.tar.json");
     assert!(log_file.is_file(), "per-block log archive written");
 
     // The archive gunzips and untars to a single member whose JSON is the block's log lines.
