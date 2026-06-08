@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:pages": "tsc -b && vite build --base=/zkevm-cluster-benchmark/",
+    "build:pages": "tsc -b && vite build --base=/zkevm-cluster-benchmark-runs/",
     "preview": "vite preview",
     "lint": "eslint src",
     "test": "vitest run"
