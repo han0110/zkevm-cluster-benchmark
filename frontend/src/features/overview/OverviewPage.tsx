@@ -19,11 +19,19 @@ import { ProvingTimeHistogram } from '@/components/charts/ProvingTimeHistogram';
 import { PhaseBreakdownChart, type PhaseBreakdownRow } from '@/components/charts/PhaseBreakdownChart';
 import { PhaseTimingChart } from '@/components/charts/PhaseTimingChart';
 import { clusterPhaseSeries, meanClusterPhases } from '@/utils/phaseTimings';
-import { provingTimeBuckets, bucketRangeLabel } from '@/utils/provingTimeBuckets';
+import { provingTimeBuckets, bucketRangeLabel, BUCKET_S } from '@/utils/provingTimeBuckets';
 import { buildPhaseRegistry } from '@/utils/phases';
 import { latestBlocks } from '@/utils/runs';
 import { summarizeProofs } from '@/utils/proofStats';
 import { formatCompact, formatMsSeconds, dash, formatDateTime } from '@/utils/format';
+
+// Histogram bin widths in seconds, cycled fine to coarse by the panel's bucket pill.
+const HISTOGRAM_BUCKETS_S = [0.1, 0.5, 1];
+
+// Default bin width for a proving-time spread, finer for tighter distributions so the bar count stays
+// readable. A spread under 16 s takes 0.1 s bins and a spread under 80 s takes 0.5 s bins. Anything
+// wider takes 1 s bins.
+const defaultBucketS = (spreadS: number): number => (spreadS < 16 ? 0.1 : spreadS < 80 ? 0.5 : 1);
 
 export function OverviewPage() {
   const data = useBench();
@@ -37,7 +45,23 @@ export function OverviewPage() {
   const startedAt = useMemo(() => Math.min(...data.runs.map(r => r.started_at)), [data]);
 
   const cluster = clusterPhaseSeries(blocks, registry);
+  // Fixed default-width bucketing feeding the phase-breakdown rows, which stay coarse enough to read
+  // as a table regardless of the histogram's bin toggle.
   const buckets = provingTimeBuckets(blocks);
+
+  // The histogram bins at its own selectable width, a pill the reader cycles through fine to coarse.
+  // The stored value stays null until the reader clicks, so an untouched chart keeps following the
+  // spread-driven default across benchmarks instead of freezing the first default it saw. A stale
+  // persisted width outside the cycle falls back to the first entry on the next click.
+  const provingSpreadS = useMemo(() => {
+    const times = blocks.filter(b => b.status === 'success').flatMap(b => (b.proving_ms == null ? [] : [b.proving_ms]));
+    return times.length ? (Math.max(...times) - Math.min(...times)) / 1000 : 0;
+  }, [blocks]);
+  const [storedBucketS, setStoredBucketS] = usePersistentState<number | null>('overview-histogram-bucket-s', null);
+  const histBucketS = storedBucketS ?? defaultBucketS(provingSpreadS);
+  const histBuckets = provingTimeBuckets(blocks, histBucketS);
+  const cycleHistBucketS = () =>
+    setStoredBucketS(HISTOGRAM_BUCKETS_S[(HISTOGRAM_BUCKETS_S.indexOf(histBucketS) + 1) % HISTOGRAM_BUCKETS_S.length] ?? BUCKET_S);
 
   // The per-block phase chart can order blocks by proving time instead of by name, a tab the reader
   // cycles. Sorting by time is ascending, so the slowest block lands on the right.
@@ -94,8 +118,25 @@ export function OverviewPage() {
         <SectionHeading>Benchmark</SectionHeading>
         <StatStrip items={benchmarkItems} />
 
-        <ChartPanel title="Proving time distribution">
-          <ProvingTimeHistogram labels={buckets.labels} counts={buckets.counts} bucketS={buckets.bucketS} />
+        <ChartPanel
+          title="Proving time distribution"
+          action={
+            <button type="button" onClick={cycleHistBucketS} className={cx(PILL, FOCUS_RING, PILL_IDLE)}>
+              {`${histBucketS} s buckets`}
+            </button>
+          }
+        >
+          <ProvingTimeHistogram
+            labels={histBuckets.labels}
+            counts={histBuckets.counts}
+            bucketS={histBuckets.bucketS}
+            percentiles={[
+              { label: 'P50', ms: summary.p50Ms },
+              { label: 'P90', ms: summary.p90Ms },
+              { label: 'P95', ms: summary.p95Ms },
+              { label: 'P99', ms: summary.p99Ms },
+            ]}
+          />
         </ChartPanel>
 
         <ChartPanel title="Phase breakdown">
